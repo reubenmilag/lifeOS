@@ -2,6 +2,7 @@ import 'dart:convert';
 import 'package:dio/dio.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../models/dashboard_model.dart';
+import '../models/account_model.dart';
 
 class ApiService {
   final Dio _dio;
@@ -9,10 +10,10 @@ class ApiService {
   static const String _ratesKey = 'currency_rates';
 
   ApiService({String? baseUrl})
-      : baseUrl = baseUrl ?? 'http://192.168.0.102:3000',
+      : baseUrl = baseUrl ?? 'http://192.168.0.102:3000', // Updated to localhost for simulator/emulator access, might need 10.0.2.2 for Android
         _dio = Dio(BaseOptions(
-          connectTimeout: const Duration(seconds: 5),
-          receiveTimeout: const Duration(seconds: 3),
+          connectTimeout: const Duration(seconds: 15),
+          receiveTimeout: const Duration(seconds: 15),
         ));
 
   Future<DashboardData> getDashboardData() async {
@@ -21,6 +22,16 @@ class ApiService {
       return DashboardData.fromJson(response.data);
     } on DioException catch (e) {
       throw Exception('Failed to load dashboard data: ${e.message}');
+    }
+  }
+
+  Future<List<Account>> getAccounts() async {
+    try {
+      final response = await _dio.get('$baseUrl/api/accounts');
+      final List<dynamic> data = response.data;
+      return data.map((json) => Account.fromJson(json)).toList();
+    } on DioException catch (e) {
+      throw Exception('Failed to load accounts: ${e.message}');
     }
   }
 

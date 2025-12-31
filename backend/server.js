@@ -5,11 +5,25 @@
 
 import Fastify from 'fastify';
 import cors from '@fastify/cors';
+import mongoose from 'mongoose';
+import dotenv from 'dotenv';
 import dashboardRoutes from './routes/dashboard.js';
+import accountRoutes from './routes/accounts.js';
+
+dotenv.config();
 
 const fastify = Fastify({
   logger: true
 });
+
+// Connect to MongoDB
+try {
+  await mongoose.connect(process.env.MONGODB_URI);
+  console.log('📦 Connected to MongoDB');
+} catch (err) {
+  console.error('❌ MongoDB connection error:', err);
+  process.exit(1);
+}
 
 // Register CORS plugin
 await fastify.register(cors, {
@@ -19,6 +33,7 @@ await fastify.register(cors, {
 
 // Register routes
 await fastify.register(dashboardRoutes);
+await fastify.register(accountRoutes);
 
 // Root route
 fastify.get('/', async (request, reply) => {

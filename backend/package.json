@@ -8,11 +8,17 @@
     "start": "node server.js",
     "dev": "node --watch server.js"
   },
-  "keywords": ["fastify", "api", "lifeos"],
+  "keywords": [
+    "fastify",
+    "api",
+    "lifeos"
+  ],
   "author": "",
   "license": "ISC",
   "dependencies": {
     "@fastify/cors": "^11.2.0",
-    "fastify": "^5.6.2"
+    "dotenv": "^17.2.3",
+    "fastify": "^5.6.2",
+    "mongoose": "^9.1.1"
   }
 }

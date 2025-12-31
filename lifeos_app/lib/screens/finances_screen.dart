@@ -1,8 +1,25 @@
 import 'package:flutter/material.dart';
 import 'package:forui/forui.dart';
+import 'package:lifeos_app/widgets/account_dashboard.dart';
+import 'package:lifeos_app/services/api_service.dart';
+import 'package:lifeos_app/models/account_model.dart';
 
-class FinancesScreen extends StatelessWidget {
+class FinancesScreen extends StatefulWidget {
   const FinancesScreen({super.key});
+
+  @override
+  State<FinancesScreen> createState() => _FinancesScreenState();
+}
+
+class _FinancesScreenState extends State<FinancesScreen> {
+  final ApiService _apiService = ApiService();
+  late Future<List<Account>> _accountsFuture;
+
+  @override
+  void initState() {
+    super.initState();
+    _accountsFuture = _apiService.getAccounts();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -54,12 +71,7 @@ class FinancesScreen extends StatelessWidget {
             ),
           ),
         ),
-        body: TabBarView(
-          children: [
-            _buildAccountsTab(),
-            _buildBudgetsTab(),
-          ],
-        ),
+        body: TabBarView(children: [_buildAccountsTab(), _buildBudgetsTab()]),
       ),
     );
   }
@@ -70,45 +82,19 @@ class FinancesScreen extends StatelessWidget {
       children: [
         _buildNetWorthCard(),
         const SizedBox(height: 24),
-        const Text(
-          'Your Accounts',
-          style: TextStyle(
-            fontSize: 20,
-            fontWeight: FontWeight.bold,
-            letterSpacing: -0.5,
-          ),
-        ),
-        const SizedBox(height: 16),
-        _buildAccountItem(
-          'Main Checking',
-          '**** 4532',
-          '\$12,450.00',
-          FAssets.icons.landmark,
-          Colors.blue,
-        ),
-        const SizedBox(height: 12),
-        _buildAccountItem(
-          'Savings',
-          '**** 8821',
-          '\$45,200.50',
-          FAssets.icons.piggyBank,
-          Colors.green,
-        ),
-        const SizedBox(height: 12),
-        _buildAccountItem(
-          'Credit Card',
-          '**** 1234',
-          '-\$1,240.00',
-          FAssets.icons.creditCard,
-          Colors.orange,
-        ),
-        const SizedBox(height: 12),
-        _buildAccountItem(
-          'Investment Portfolio',
-          'Stocks & ETFs',
-          '\$28,340.20',
-          FAssets.icons.trendingUp,
-          Colors.purple,
+        FutureBuilder<List<Account>>(
+          future: _accountsFuture,
+          builder: (context, snapshot) {
+            if (snapshot.connectionState == ConnectionState.waiting) {
+              return const Center(child: CircularProgressIndicator());
+            } else if (snapshot.hasError) {
+              return Center(child: Text('Error: ${snapshot.error}'));
+            } else if (!snapshot.hasData || snapshot.data!.isEmpty) {
+              return const Center(child: Text('No accounts found'));
+            } else {
+              return AccountDashboard(accounts: snapshot.data!);
+            }
+          },
         ),
       ],
     );
@@ -162,19 +148,9 @@ class FinancesScreen extends StatelessWidget {
           ),
         ),
         const SizedBox(height: 16),
-        _buildGoalItem(
-          'New Car',
-          '\$15,000 / \$25,000',
-          0.6,
-          Colors.indigo,
-        ),
+        _buildGoalItem('New Car', '\$15,000 / \$25,000', 0.6, Colors.indigo),
         const SizedBox(height: 16),
-        _buildGoalItem(
-          'Vacation',
-          '\$2,000 / \$5,000',
-          0.4,
-          Colors.teal,
-        ),
+        _buildGoalItem('Vacation', '\$2,000 / \$5,000', 0.4, Colors.teal),
       ],
     );
   }
@@ -235,13 +211,7 @@ class FinancesScreen extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(
-          label,
-          style: TextStyle(
-            color: Colors.grey[400],
-            fontSize: 14,
-          ),
-        ),
+        Text(label, style: TextStyle(color: Colors.grey[400], fontSize: 14)),
         const SizedBox(height: 4),
         Text(
           value,
@@ -252,59 +222,6 @@ class FinancesScreen extends StatelessWidget {
           ),
         ),
       ],
-    );
-  }
-
-  Widget _buildAccountItem(
-    String name,
-    String subtitle,
-    String amount,
-    SvgAsset icon,
-    Color color,
-  ) {
-    return FCard(
-      child: Row(
-        children: [
-          Container(
-            padding: const EdgeInsets.all(12),
-            decoration: BoxDecoration(
-              color: color.withOpacity(0.1),
-              borderRadius: BorderRadius.circular(12),
-            ),
-            child: FIcon(icon, color: color, size: 24),
-          ),
-          const SizedBox(width: 16),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  name,
-                  style: const TextStyle(
-                    fontWeight: FontWeight.w600,
-                    fontSize: 16,
-                  ),
-                ),
-                Text(
-                  subtitle,
-                  style: TextStyle(
-                    color: Colors.grey[500],
-                    fontSize: 14,
-                  ),
-                ),
-              ],
-            ),
-          ),
-          Text(
-            amount,
-            style: TextStyle(
-              fontWeight: FontWeight.bold,
-              fontSize: 16,
-              color: amount.startsWith('-') ? Colors.red : Colors.black,
-            ),
-          ),
-        ],
-      ),
     );
   }
 
@@ -449,13 +366,7 @@ class FinancesScreen extends StatelessWidget {
             ],
           ),
           const SizedBox(height: 8),
-          Text(
-            amount,
-            style: TextStyle(
-              color: Colors.grey[600],
-              fontSize: 14,
-            ),
-          ),
+          Text(amount, style: TextStyle(color: Colors.grey[600], fontSize: 14)),
           const SizedBox(height: 12),
           ClipRRect(
             borderRadius: BorderRadius.circular(4),
