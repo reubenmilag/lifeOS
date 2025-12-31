@@ -1,0 +1,18 @@
+{
+  "name": "lifeos-backend",
+  "version": "1.0.0",
+  "description": "LifeOS Backend API with Fastify",
+  "main": "server.js",
+  "type": "module",
+  "scripts": {
+    "start": "node server.js",
+    "dev": "node --watch server.js"
+  },
+  "keywords": ["fastify", "api", "lifeos"],
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "@fastify/cors": "^11.2.0",
+    "fastify": "^5.6.2"
+  }
+}

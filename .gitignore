@@ -1,0 +1,20 @@
+# Node
+backend/node_modules/
+backend/.env
+
+# Flutter/Dart
+lifeos_app/.dart_tool/
+lifeos_app/.flutter-plugins
+lifeos_app/.flutter-plugins-dependencies
+lifeos_app/.metadata
+lifeos_app/.packages
+lifeos_app/build/
+lifeos_app/pubspec.lock
+
+# IDE
+.vscode/
+.idea/
+*.iml
+
+# OS
+.DS_Store
