@@ -5,6 +5,8 @@ import '../models/dashboard_model.dart';
 import '../models/account_model.dart';
 import '../models/budget_model.dart';
 import '../models/goal_model.dart';
+import '../models/category_model.dart';
+import '../models/transaction_model.dart';
 
 class ApiService {
   final Dio _dio;
@@ -86,6 +88,40 @@ class ApiService {
       return data.map((json) => Goal.fromJson(json)).toList();
     } on DioException catch (e) {
       throw Exception('Failed to load goals: ${e.message}');
+    }
+  }
+
+  Future<List<Category>> getCategories() async {
+    try {
+      final response = await _dio.get('$baseUrl/api/categories');
+      final List<dynamic> data = response.data;
+      return data.map((json) => Category.fromJson(json)).toList();
+    } on DioException catch (e) {
+      throw Exception('Failed to load categories: ${e.message}');
+    }
+  }
+
+  Future<TransactionModel> createTransaction(TransactionModel transaction) async {
+    try {
+      final response = await _dio.post(
+        '$baseUrl/api/transactions',
+        data: transaction.toJson(),
+      );
+      // We don't necessarily need to parse the response if we just want to know it succeeded
+      // But returning the created object is good practice
+      return transaction; 
+    } on DioException catch (e) {
+      throw Exception('Failed to create transaction: ${e.message}');
+    }
+  }
+
+  Future<List<TransactionModel>> getTransactions() async {
+    try {
+      final response = await _dio.get('$baseUrl/api/transactions');
+      final List<dynamic> data = response.data;
+      return data.map((json) => TransactionModel.fromJson(json)).toList();
+    } on DioException catch (e) {
+      throw Exception('Failed to load transactions: ${e.message}');
     }
   }
 

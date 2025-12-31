@@ -11,6 +11,8 @@ import dashboardRoutes from './routes/dashboard.js';
 import accountRoutes from './routes/accounts.js';
 import budgetRoutes from './routes/budgets.js';
 import goalRoutes from './routes/goals.js';
+import categoryRoutes from './routes/categories.js';
+import transactionRoutes from './routes/transactions.js';
 
 dotenv.config();
 
@@ -38,6 +40,8 @@ await fastify.register(dashboardRoutes);
 await fastify.register(accountRoutes);
 await fastify.register(budgetRoutes);
 await fastify.register(goalRoutes);
+await fastify.register(categoryRoutes);
+await fastify.register(transactionRoutes);
 
 // Root route
 fastify.get('/', async (request, reply) => {

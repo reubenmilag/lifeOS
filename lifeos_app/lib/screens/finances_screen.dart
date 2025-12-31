@@ -5,6 +5,9 @@ import 'package:lifeos_app/services/api_service.dart';
 import 'package:lifeos_app/models/account_model.dart';
 import 'package:lifeos_app/models/budget_model.dart';
 import 'package:lifeos_app/models/goal_model.dart';
+import 'package:lifeos_app/models/transaction_model.dart';
+import 'package:lifeos_app/screens/add_transaction_screen.dart';
+import 'package:lifeos_app/widgets/transaction_list.dart';
 
 class FinancesScreen extends StatefulWidget {
   const FinancesScreen({super.key});
@@ -18,6 +21,7 @@ class _FinancesScreenState extends State<FinancesScreen> {
   late Future<List<Account>> _accountsFuture;
   late Future<List<Budget>> _budgetsFuture;
   late Future<List<Goal>> _goalsFuture;
+  late Future<List<TransactionModel>> _transactionsFuture;
 
   @override
   void initState() {
@@ -30,6 +34,7 @@ class _FinancesScreenState extends State<FinancesScreen> {
   void _refreshAccounts() {
     setState(() {
       _accountsFuture = _apiService.getAccounts();
+      _transactionsFuture = _apiService.getTransactions();
     });
   }
 
@@ -84,6 +89,22 @@ class _FinancesScreenState extends State<FinancesScreen> {
           ),
         ),
         body: TabBarView(children: [_buildAccountsTab(), _buildBudgetsTab()]),
+        floatingActionButton: FloatingActionButton(
+          onPressed: () async {
+            final result = await Navigator.push(
+              context,
+              MaterialPageRoute(
+                builder: (context) => const AddTransactionScreen(),
+              ),
+            );
+            
+            if (result == true) {
+              _refreshAccounts();
+            }
+          },
+          backgroundColor: Colors.black,
+          child: const Icon(Icons.add, color: Colors.white),
+        ),
       ),
     );
   }
@@ -107,6 +128,32 @@ class _FinancesScreenState extends State<FinancesScreen> {
               return AccountDashboard(
                 accounts: snapshot.data!,
                 onRefresh: _refreshAccounts,
+              );
+            }
+          },
+        ),
+        const SizedBox(height: 32),
+        Divider(color: Colors.grey.withOpacity(0.1), thickness: 1),
+        const SizedBox(height: 32),
+        FutureBuilder<List<TransactionModel>>(
+          future: _transactionsFuture,
+          builder: (context, snapshot) {
+            if (snapshot.connectionState == ConnectionState.waiting) {
+              return const Center(child: CircularProgressIndicator());
+            } else if (snapshot.hasError) {
+              return Center(child: Text('Error: ${snapshot.error}'));
+            } else {
+              final transactions = snapshot.data ?? [];
+              final recentTransactions = transactions.take(5).toList();
+              return TransactionList(
+                transactions: recentTransactions,
+                onViewAll: () {
+                  // Navigate to full transaction history
+                  // For now just show a snackbar or print
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(content: Text('View All Transactions - Coming Soon')),
+                  );
+                },
               );
             }
           },
