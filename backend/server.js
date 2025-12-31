@@ -9,6 +9,8 @@ import mongoose from 'mongoose';
 import dotenv from 'dotenv';
 import dashboardRoutes from './routes/dashboard.js';
 import accountRoutes from './routes/accounts.js';
+import budgetRoutes from './routes/budgets.js';
+import goalRoutes from './routes/goals.js';
 
 dotenv.config();
 
@@ -34,6 +36,8 @@ await fastify.register(cors, {
 // Register routes
 await fastify.register(dashboardRoutes);
 await fastify.register(accountRoutes);
+await fastify.register(budgetRoutes);
+await fastify.register(goalRoutes);
 
 // Root route
 fastify.get('/', async (request, reply) => {

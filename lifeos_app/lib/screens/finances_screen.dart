@@ -3,6 +3,8 @@ import 'package:forui/forui.dart';
 import 'package:lifeos_app/widgets/account_dashboard.dart';
 import 'package:lifeos_app/services/api_service.dart';
 import 'package:lifeos_app/models/account_model.dart';
+import 'package:lifeos_app/models/budget_model.dart';
+import 'package:lifeos_app/models/goal_model.dart';
 
 class FinancesScreen extends StatefulWidget {
   const FinancesScreen({super.key});
@@ -14,11 +16,15 @@ class FinancesScreen extends StatefulWidget {
 class _FinancesScreenState extends State<FinancesScreen> {
   final ApiService _apiService = ApiService();
   late Future<List<Account>> _accountsFuture;
+  late Future<List<Budget>> _budgetsFuture;
+  late Future<List<Goal>> _goalsFuture;
 
   @override
   void initState() {
     super.initState();
     _accountsFuture = _apiService.getAccounts();
+    _budgetsFuture = _apiService.getBudgets();
+    _goalsFuture = _apiService.getGoals();
   }
 
   @override
@@ -115,28 +121,32 @@ class _FinancesScreenState extends State<FinancesScreen> {
           ),
         ),
         const SizedBox(height: 16),
-        _buildBudgetItem(
-          'Groceries',
-          '\$450 / \$600',
-          0.75,
-          Colors.orange,
-          FAssets.icons.shoppingCart,
-        ),
-        const SizedBox(height: 16),
-        _buildBudgetItem(
-          'Transport',
-          '\$120 / \$200',
-          0.6,
-          Colors.blue,
-          FAssets.icons.bus,
-        ),
-        const SizedBox(height: 16),
-        _buildBudgetItem(
-          'Entertainment',
-          '\$280 / \$300',
-          0.93,
-          Colors.red,
-          FAssets.icons.popcorn,
+        FutureBuilder<List<Budget>>(
+          future: _budgetsFuture,
+          builder: (context, snapshot) {
+            if (snapshot.connectionState == ConnectionState.waiting) {
+              return const Center(child: CircularProgressIndicator());
+            } else if (snapshot.hasError) {
+              return Text('Error: ${snapshot.error}');
+            } else if (!snapshot.hasData || snapshot.data!.isEmpty) {
+              return const Text('No budgets found');
+            } else {
+              return Column(
+                children: snapshot.data!.map((budget) {
+                  return Padding(
+                    padding: const EdgeInsets.only(bottom: 16.0),
+                    child: _buildBudgetItem(
+                      budget.name,
+                      '\$${budget.spent.toInt()} / \$${budget.limit.toInt()}',
+                      budget.progress,
+                      _parseColor(budget.color),
+                      _getIcon(budget.icon),
+                    ),
+                  );
+                }).toList(),
+              );
+            }
+          },
         ),
         const SizedBox(height: 24),
         const Text(
@@ -148,11 +158,55 @@ class _FinancesScreenState extends State<FinancesScreen> {
           ),
         ),
         const SizedBox(height: 16),
-        _buildGoalItem('New Car', '\$15,000 / \$25,000', 0.6, Colors.indigo),
-        const SizedBox(height: 16),
-        _buildGoalItem('Vacation', '\$2,000 / \$5,000', 0.4, Colors.teal),
+        FutureBuilder<List<Goal>>(
+          future: _goalsFuture,
+          builder: (context, snapshot) {
+            if (snapshot.connectionState == ConnectionState.waiting) {
+              return const Center(child: CircularProgressIndicator());
+            } else if (snapshot.hasError) {
+              return Text('Error: ${snapshot.error}');
+            } else if (!snapshot.hasData || snapshot.data!.isEmpty) {
+              return const Text('No goals found');
+            } else {
+              return Column(
+                children: snapshot.data!.map((goal) {
+                  return Padding(
+                    padding: const EdgeInsets.only(bottom: 16.0),
+                    child: _buildGoalItem(
+                      goal.name,
+                      '\$${goal.saved.toInt()} / \$${goal.target.toInt()}',
+                      goal.progress,
+                      _parseColor(goal.color),
+                    ),
+                  );
+                }).toList(),
+              );
+            }
+          },
+        ),
       ],
     );
+  }
+
+  Color _parseColor(String hexColor) {
+    hexColor = hexColor.replaceAll('#', '');
+    if (hexColor.length == 6) {
+      hexColor = 'FF$hexColor';
+    }
+    return Color(int.parse('0x$hexColor'));
+  }
+
+  SvgAsset _getIcon(String iconName) {
+    switch (iconName) {
+      case 'shoppingCart':
+        return FAssets.icons.shoppingCart;
+      case 'bus':
+        return FAssets.icons.bus;
+      case 'popcorn':
+        return FAssets.icons.popcorn;
+      default:
+        return FAssets.icons.circleDollarSign;
+    }
   }
 
   Widget _buildNetWorthCard() {

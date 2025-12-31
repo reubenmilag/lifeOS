@@ -3,6 +3,8 @@ import 'package:dio/dio.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../models/dashboard_model.dart';
 import '../models/account_model.dart';
+import '../models/budget_model.dart';
+import '../models/goal_model.dart';
 
 class ApiService {
   final Dio _dio;
@@ -32,6 +34,26 @@ class ApiService {
       return data.map((json) => Account.fromJson(json)).toList();
     } on DioException catch (e) {
       throw Exception('Failed to load accounts: ${e.message}');
+    }
+  }
+
+  Future<List<Budget>> getBudgets() async {
+    try {
+      final response = await _dio.get('$baseUrl/api/budgets');
+      final List<dynamic> data = response.data;
+      return data.map((json) => Budget.fromJson(json)).toList();
+    } on DioException catch (e) {
+      throw Exception('Failed to load budgets: ${e.message}');
+    }
+  }
+
+  Future<List<Goal>> getGoals() async {
+    try {
+      final response = await _dio.get('$baseUrl/api/goals');
+      final List<dynamic> data = response.data;
+      return data.map((json) => Goal.fromJson(json)).toList();
+    } on DioException catch (e) {
+      throw Exception('Failed to load goals: ${e.message}');
     }
   }
 
