@@ -34,3 +34,29 @@ export const createAccount = async (request, reply) => {
     reply.code(400).send({ error: 'Failed to create account' });
   }
 };
+
+export const updateAccount = async (request, reply) => {
+  try {
+    const { id } = request.params;
+    const account = await Account.findByIdAndUpdate(id, request.body, { new: true });
+    if (!account) {
+      return reply.code(404).send({ error: 'Account not found' });
+    }
+    return account;
+  } catch (error) {
+    reply.code(400).send({ error: 'Failed to update account' });
+  }
+};
+
+export const deleteAccount = async (request, reply) => {
+  try {
+    const { id } = request.params;
+    const account = await Account.findByIdAndDelete(id);
+    if (!account) {
+      return reply.code(404).send({ error: 'Account not found' });
+    }
+    return { message: 'Account deleted successfully' };
+  } catch (error) {
+    reply.code(400).send({ error: 'Failed to delete account' });
+  }
+};

@@ -1,10 +1,17 @@
 import 'package:flutter/material.dart';
 import '../models/account_model.dart';
+import '../screens/account_details_screen.dart';
+import '../screens/account_edit_screen.dart';
 
 class AccountDashboard extends StatelessWidget {
   final List<Account> accounts;
+  final VoidCallback? onRefresh;
 
-  const AccountDashboard({super.key, required this.accounts});
+  const AccountDashboard({
+    super.key,
+    required this.accounts,
+    this.onRefresh,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -13,7 +20,7 @@ class AccountDashboard extends StatelessWidget {
       children: [
         // Header
         Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
+          padding: const EdgeInsets.symmetric(horizontal: 0.0, vertical: 8.0),
           child: Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
@@ -37,7 +44,7 @@ class AccountDashboard extends StatelessWidget {
 
         // Account Grid
         Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 16.0),
+          padding: const EdgeInsets.symmetric(horizontal: 0.0),
           child: LayoutBuilder(
             builder: (context, constraints) {
               // Responsive grid: 2 columns on small screens, more on larger
@@ -61,12 +68,36 @@ class AccountDashboard extends StatelessWidget {
                 itemCount: accounts.length,
                 itemBuilder: (context, index) {
                   final account = accounts[index];
-                  return AccountCard(
-                    name: account.name,
-                    balance: account.balance,
-                    color: _parseColor(account.color),
-                    type: account.type,
-                    isLocked: account.isLocked,
+                  return GestureDetector(
+                    onTap: () async {
+                      bool? shouldRefresh;
+                      if (account.type != 'add') {
+                        shouldRefresh = await Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (context) => AccountDetailsScreen(account: account),
+                          ),
+                        );
+                      } else {
+                        shouldRefresh = await Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (context) => const AccountEditScreen(),
+                          ),
+                        );
+                      }
+                      
+                      if (shouldRefresh == true && onRefresh != null) {
+                        onRefresh!();
+                      }
+                    },
+                    child: AccountCard(
+                      name: account.name,
+                      balance: account.balance,
+                      color: _parseColor(account.color),
+                      type: account.type,
+                      isLocked: account.isLocked,
+                    ),
                   );
                 },
               );
@@ -75,26 +106,6 @@ class AccountDashboard extends StatelessWidget {
         ),
 
         const SizedBox(height: 10),
-
-        // Action Button (Records)
-        Padding(
-          padding: const EdgeInsets.only(right: 16.0, bottom: 16.0),
-          child: Align(
-            alignment: Alignment.centerRight,
-            child: ElevatedButton.icon(
-              onPressed: () {
-                // Handle Records button tap
-              },
-              icon: const Icon(Icons.list),
-              label: const Text('Records'),
-              style: ElevatedButton.styleFrom(
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(20),
-                ),
-              ),
-            ),
-          ),
-        ),
       ],
     );
   }

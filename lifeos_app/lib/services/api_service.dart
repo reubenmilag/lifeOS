@@ -37,6 +37,38 @@ class ApiService {
     }
   }
 
+  Future<Account> createAccount(Account account) async {
+    try {
+      final response = await _dio.post(
+        '$baseUrl/api/accounts',
+        data: account.toJson(),
+      );
+      return Account.fromJson(response.data);
+    } on DioException catch (e) {
+      throw Exception('Failed to create account: ${e.message}');
+    }
+  }
+
+  Future<Account> updateAccount(Account account) async {
+    try {
+      final response = await _dio.put(
+        '$baseUrl/api/accounts/${account.id}',
+        data: account.toJson(),
+      );
+      return Account.fromJson(response.data);
+    } on DioException catch (e) {
+      throw Exception('Failed to update account: ${e.message}');
+    }
+  }
+
+  Future<void> deleteAccount(String id) async {
+    try {
+      await _dio.delete('$baseUrl/api/accounts/$id');
+    } on DioException catch (e) {
+      throw Exception('Failed to delete account: ${e.message}');
+    }
+  }
+
   Future<List<Budget>> getBudgets() async {
     try {
       final response = await _dio.get('$baseUrl/api/budgets');

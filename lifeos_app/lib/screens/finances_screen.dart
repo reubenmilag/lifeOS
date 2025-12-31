@@ -22,9 +22,15 @@ class _FinancesScreenState extends State<FinancesScreen> {
   @override
   void initState() {
     super.initState();
-    _accountsFuture = _apiService.getAccounts();
+    _refreshAccounts();
     _budgetsFuture = _apiService.getBudgets();
     _goalsFuture = _apiService.getGoals();
+  }
+
+  void _refreshAccounts() {
+    setState(() {
+      _accountsFuture = _apiService.getAccounts();
+    });
   }
 
   @override
@@ -98,7 +104,10 @@ class _FinancesScreenState extends State<FinancesScreen> {
             } else if (!snapshot.hasData || snapshot.data!.isEmpty) {
               return const Center(child: Text('No accounts found'));
             } else {
-              return AccountDashboard(accounts: snapshot.data!);
+              return AccountDashboard(
+                accounts: snapshot.data!,
+                onRefresh: _refreshAccounts,
+              );
             }
           },
         ),
