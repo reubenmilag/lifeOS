@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:forui/forui.dart';
 import 'screens/home_screen.dart';
+import 'screens/finances_screen.dart';
 
 void main() {
   runApp(const LifeOSApp());
@@ -36,6 +37,7 @@ class _MainTabScaffoldState extends State<MainTabScaffold> {
   @override
   Widget build(BuildContext context) {
     return FScaffold(
+      contentPad: false,
       content: _buildBody(),
       footer: FBottomNavigationBar(
         index: _selectedIndex,
@@ -67,7 +69,7 @@ class _MainTabScaffoldState extends State<MainTabScaffold> {
       case 0:
         return const HomeScreen();
       case 1:
-        return const Center(child: Text('Finances'));
+        return const FinancesScreen();
       case 2:
         return const Center(child: Text('Planner'));
       case 3:

@@ -1,0 +1,473 @@
+import 'package:flutter/material.dart';
+import 'package:forui/forui.dart';
+
+class FinancesScreen extends StatelessWidget {
+  const FinancesScreen({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return DefaultTabController(
+      length: 2,
+      child: Scaffold(
+        backgroundColor: Theme.of(context).scaffoldBackgroundColor,
+        appBar: AppBar(
+          backgroundColor: Theme.of(context).scaffoldBackgroundColor,
+          elevation: 0,
+          centerTitle: false,
+          title: const Padding(
+            padding: EdgeInsets.only(left: 8.0),
+            child: Text(
+              'Finances',
+              style: TextStyle(
+                fontSize: 34,
+                fontWeight: FontWeight.bold,
+                color: Colors.black,
+                letterSpacing: -1.0,
+              ),
+            ),
+          ),
+          bottom: PreferredSize(
+            preferredSize: const Size.fromHeight(48),
+            child: Container(
+              decoration: BoxDecoration(
+                border: Border(
+                  bottom: BorderSide(
+                    color: Colors.grey.withOpacity(0.2),
+                    width: 1,
+                  ),
+                ),
+              ),
+              child: const TabBar(
+                labelColor: Colors.black,
+                unselectedLabelColor: Colors.grey,
+                indicatorColor: Colors.black,
+                indicatorWeight: 3,
+                labelStyle: TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.w600,
+                ),
+                tabs: [
+                  Tab(text: 'Accounts'),
+                  Tab(text: 'Budgets & Goals'),
+                ],
+              ),
+            ),
+          ),
+        ),
+        body: TabBarView(
+          children: [
+            _buildAccountsTab(),
+            _buildBudgetsTab(),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildAccountsTab() {
+    return ListView(
+      padding: const EdgeInsets.all(20),
+      children: [
+        _buildNetWorthCard(),
+        const SizedBox(height: 24),
+        const Text(
+          'Your Accounts',
+          style: TextStyle(
+            fontSize: 20,
+            fontWeight: FontWeight.bold,
+            letterSpacing: -0.5,
+          ),
+        ),
+        const SizedBox(height: 16),
+        _buildAccountItem(
+          'Main Checking',
+          '**** 4532',
+          '\$12,450.00',
+          FAssets.icons.landmark,
+          Colors.blue,
+        ),
+        const SizedBox(height: 12),
+        _buildAccountItem(
+          'Savings',
+          '**** 8821',
+          '\$45,200.50',
+          FAssets.icons.piggyBank,
+          Colors.green,
+        ),
+        const SizedBox(height: 12),
+        _buildAccountItem(
+          'Credit Card',
+          '**** 1234',
+          '-\$1,240.00',
+          FAssets.icons.creditCard,
+          Colors.orange,
+        ),
+        const SizedBox(height: 12),
+        _buildAccountItem(
+          'Investment Portfolio',
+          'Stocks & ETFs',
+          '\$28,340.20',
+          FAssets.icons.trendingUp,
+          Colors.purple,
+        ),
+      ],
+    );
+  }
+
+  Widget _buildBudgetsTab() {
+    return ListView(
+      padding: const EdgeInsets.all(20),
+      children: [
+        _buildBudgetSummaryCard(),
+        const SizedBox(height: 24),
+        const Text(
+          'Monthly Budgets',
+          style: TextStyle(
+            fontSize: 20,
+            fontWeight: FontWeight.bold,
+            letterSpacing: -0.5,
+          ),
+        ),
+        const SizedBox(height: 16),
+        _buildBudgetItem(
+          'Groceries',
+          '\$450 / \$600',
+          0.75,
+          Colors.orange,
+          FAssets.icons.shoppingCart,
+        ),
+        const SizedBox(height: 16),
+        _buildBudgetItem(
+          'Transport',
+          '\$120 / \$200',
+          0.6,
+          Colors.blue,
+          FAssets.icons.bus,
+        ),
+        const SizedBox(height: 16),
+        _buildBudgetItem(
+          'Entertainment',
+          '\$280 / \$300',
+          0.93,
+          Colors.red,
+          FAssets.icons.popcorn,
+        ),
+        const SizedBox(height: 24),
+        const Text(
+          'Savings Goals',
+          style: TextStyle(
+            fontSize: 20,
+            fontWeight: FontWeight.bold,
+            letterSpacing: -0.5,
+          ),
+        ),
+        const SizedBox(height: 16),
+        _buildGoalItem(
+          'New Car',
+          '\$15,000 / \$25,000',
+          0.6,
+          Colors.indigo,
+        ),
+        const SizedBox(height: 16),
+        _buildGoalItem(
+          'Vacation',
+          '\$2,000 / \$5,000',
+          0.4,
+          Colors.teal,
+        ),
+      ],
+    );
+  }
+
+  Widget _buildNetWorthCard() {
+    return Container(
+      padding: const EdgeInsets.all(24),
+      decoration: BoxDecoration(
+        gradient: const LinearGradient(
+          colors: [Color(0xFF1A1A1A), Color(0xFF2C2C2E)],
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+        ),
+        borderRadius: BorderRadius.circular(24),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.2),
+            blurRadius: 20,
+            offset: const Offset(0, 10),
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Text(
+            'Net Worth',
+            style: TextStyle(
+              color: Colors.grey,
+              fontSize: 16,
+              fontWeight: FontWeight.w500,
+            ),
+          ),
+          const SizedBox(height: 8),
+          const Text(
+            '\$84,750.70',
+            style: TextStyle(
+              color: Colors.white,
+              fontSize: 36,
+              fontWeight: FontWeight.bold,
+              letterSpacing: -1.0,
+            ),
+          ),
+          const SizedBox(height: 24),
+          Row(
+            children: [
+              _buildNetWorthStat('Assets', '\$85,990', Colors.greenAccent),
+              const SizedBox(width: 24),
+              _buildNetWorthStat('Liabilities', '-\$1,240', Colors.redAccent),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildNetWorthStat(String label, String value, Color color) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          label,
+          style: TextStyle(
+            color: Colors.grey[400],
+            fontSize: 14,
+          ),
+        ),
+        const SizedBox(height: 4),
+        Text(
+          value,
+          style: TextStyle(
+            color: color,
+            fontSize: 18,
+            fontWeight: FontWeight.w600,
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildAccountItem(
+    String name,
+    String subtitle,
+    String amount,
+    SvgAsset icon,
+    Color color,
+  ) {
+    return FCard(
+      child: Row(
+        children: [
+          Container(
+            padding: const EdgeInsets.all(12),
+            decoration: BoxDecoration(
+              color: color.withOpacity(0.1),
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: FIcon(icon, color: color, size: 24),
+          ),
+          const SizedBox(width: 16),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  name,
+                  style: const TextStyle(
+                    fontWeight: FontWeight.w600,
+                    fontSize: 16,
+                  ),
+                ),
+                Text(
+                  subtitle,
+                  style: TextStyle(
+                    color: Colors.grey[500],
+                    fontSize: 14,
+                  ),
+                ),
+              ],
+            ),
+          ),
+          Text(
+            amount,
+            style: TextStyle(
+              fontWeight: FontWeight.bold,
+              fontSize: 16,
+              color: amount.startsWith('-') ? Colors.red : Colors.black,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildBudgetSummaryCard() {
+    return FCard(
+      title: const Text('Monthly Spending'),
+      subtitle: const Text('\$1,250 spent of \$2,000 limit'),
+      child: Padding(
+        padding: const EdgeInsets.only(top: 16.0),
+        child: Column(
+          children: [
+            ClipRRect(
+              borderRadius: BorderRadius.circular(8),
+              child: LinearProgressIndicator(
+                value: 0.625,
+                minHeight: 12,
+                backgroundColor: Colors.grey[200],
+                valueColor: const AlwaysStoppedAnimation(Colors.black),
+              ),
+            ),
+            const SizedBox(height: 8),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Text(
+                  '62.5% Used',
+                  style: TextStyle(
+                    color: Colors.grey[600],
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
+                Text(
+                  '\$750 left',
+                  style: TextStyle(
+                    color: Colors.grey[600],
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
+              ],
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildBudgetItem(
+    String name,
+    String amount,
+    double progress,
+    Color color,
+    SvgAsset icon,
+  ) {
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: Colors.grey.withOpacity(0.1)),
+      ),
+      child: Column(
+        children: [
+          Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.all(10),
+                decoration: BoxDecoration(
+                  color: color.withOpacity(0.1),
+                  borderRadius: BorderRadius.circular(10),
+                ),
+                child: FIcon(icon, color: color, size: 20),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Text(
+                  name,
+                  style: const TextStyle(
+                    fontWeight: FontWeight.w600,
+                    fontSize: 16,
+                  ),
+                ),
+              ),
+              Text(
+                amount,
+                style: const TextStyle(
+                  fontWeight: FontWeight.w600,
+                  fontSize: 14,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 12),
+          ClipRRect(
+            borderRadius: BorderRadius.circular(4),
+            child: LinearProgressIndicator(
+              value: progress,
+              minHeight: 8,
+              backgroundColor: color.withOpacity(0.1),
+              valueColor: AlwaysStoppedAnimation(color),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildGoalItem(
+    String name,
+    String amount,
+    double progress,
+    Color color,
+  ) {
+    return FCard(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Text(
+                name,
+                style: const TextStyle(
+                  fontWeight: FontWeight.w600,
+                  fontSize: 16,
+                ),
+              ),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                decoration: BoxDecoration(
+                  color: color.withOpacity(0.1),
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: Text(
+                  '${(progress * 100).toInt()}%',
+                  style: TextStyle(
+                    color: color,
+                    fontWeight: FontWeight.bold,
+                    fontSize: 12,
+                  ),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 8),
+          Text(
+            amount,
+            style: TextStyle(
+              color: Colors.grey[600],
+              fontSize: 14,
+            ),
+          ),
+          const SizedBox(height: 12),
+          ClipRRect(
+            borderRadius: BorderRadius.circular(4),
+            child: LinearProgressIndicator(
+              value: progress,
+              minHeight: 8,
+              backgroundColor: color.withOpacity(0.1),
+              valueColor: AlwaysStoppedAnimation(color),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}

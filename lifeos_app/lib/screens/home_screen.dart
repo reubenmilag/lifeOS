@@ -3,6 +3,7 @@ import 'package:forui/forui.dart';
 import '../models/dashboard_model.dart';
 import '../services/api_service.dart';
 import '../widgets/currency_converter_sheet.dart';
+import 'finances_screen.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -128,7 +129,12 @@ class _HomeScreenState extends State<HomeScreen> {
               child: FButton(
                 style: FButtonStyle.primary,
                 label: const Text('Wallets'),
-                onPress: () {},
+                onPress: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(builder: (context) => const FinancesScreen()),
+                  );
+                },
               ),
             ),
             const SizedBox(width: 12),
