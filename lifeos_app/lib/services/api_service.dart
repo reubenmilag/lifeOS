@@ -125,6 +125,53 @@ class ApiService {
     }
   }
 
+  Future<Map<String, dynamic>> getTransactionsPaginated({
+    int page = 1,
+    int limit = 10,
+    String? search,
+    String? type,
+    String? categoryId,
+    String? accountId,
+    DateTime? startDate,
+    DateTime? endDate,
+  }) async {
+    try {
+      final Map<String, dynamic> queryParams = {
+        'page': page,
+        'limit': limit,
+      };
+      if (search != null && search.isNotEmpty) queryParams['search'] = search;
+      if (type != null) queryParams['type'] = type;
+      if (categoryId != null) queryParams['categoryId'] = categoryId;
+      if (accountId != null) queryParams['accountId'] = accountId;
+      if (startDate != null) queryParams['startDate'] = startDate.toIso8601String();
+      if (endDate != null) queryParams['endDate'] = endDate.toIso8601String();
+
+      final response = await _dio.get(
+        '$baseUrl/api/transactions',
+        queryParameters: queryParams,
+      );
+      
+      final List<dynamic> data = response.data['data'];
+      final List<TransactionModel> transactions = data.map((json) => TransactionModel.fromJson(json)).toList();
+      
+      return {
+        'data': transactions,
+        'meta': response.data['meta'],
+      };
+    } on DioException catch (e) {
+      throw Exception('Failed to load transactions: ${e.message}');
+    }
+  }
+
+  Future<void> deleteTransaction(String id) async {
+    try {
+      await _dio.delete('$baseUrl/api/transactions/$id');
+    } on DioException catch (e) {
+      throw Exception('Failed to delete transaction: ${e.message}');
+    }
+  }
+
   Future<Map<String, dynamic>> getCurrencyRates() async {
     try {
       final response = await _dio.get('https://open.er-api.com/v6/latest/USD');

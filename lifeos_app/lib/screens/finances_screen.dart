@@ -7,6 +7,7 @@ import 'package:lifeos_app/models/budget_model.dart';
 import 'package:lifeos_app/models/goal_model.dart';
 import 'package:lifeos_app/models/transaction_model.dart';
 import 'package:lifeos_app/screens/add_transaction_screen.dart';
+import 'package:lifeos_app/screens/all_transactions_screen.dart';
 import 'package:lifeos_app/widgets/transaction_list.dart';
 
 class FinancesScreen extends StatefulWidget {
@@ -148,10 +149,11 @@ class _FinancesScreenState extends State<FinancesScreen> {
               return TransactionList(
                 transactions: recentTransactions,
                 onViewAll: () {
-                  // Navigate to full transaction history
-                  // For now just show a snackbar or print
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(content: Text('View All Transactions - Coming Soon')),
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) => const AllTransactionsScreen(),
+                    ),
                   );
                 },
               );
@@ -193,7 +195,7 @@ class _FinancesScreenState extends State<FinancesScreen> {
                     padding: const EdgeInsets.only(bottom: 16.0),
                     child: _buildBudgetItem(
                       budget.name,
-                      '\$${budget.spent.toInt()} / \$${budget.limit.toInt()}',
+                      '₹${budget.spent.toInt()} / ₹${budget.limit.toInt()}',
                       budget.progress,
                       _parseColor(budget.color),
                       _getIcon(budget.icon),
@@ -230,7 +232,7 @@ class _FinancesScreenState extends State<FinancesScreen> {
                     padding: const EdgeInsets.only(bottom: 16.0),
                     child: _buildGoalItem(
                       goal.name,
-                      '\$${goal.saved.toInt()} / \$${goal.target.toInt()}',
+                      '₹${goal.saved.toInt()} / ₹${goal.target.toInt()}',
                       goal.progress,
                       _parseColor(goal.color),
                     ),
@@ -296,7 +298,7 @@ class _FinancesScreenState extends State<FinancesScreen> {
           ),
           const SizedBox(height: 8),
           const Text(
-            '\$84,750.70',
+            '₹84,750.70',
             style: TextStyle(
               color: Colors.white,
               fontSize: 36,
@@ -307,9 +309,9 @@ class _FinancesScreenState extends State<FinancesScreen> {
           const SizedBox(height: 24),
           Row(
             children: [
-              _buildNetWorthStat('Assets', '\$85,990', Colors.greenAccent),
+              _buildNetWorthStat('Assets', '₹85,990', Colors.greenAccent),
               const SizedBox(width: 24),
-              _buildNetWorthStat('Liabilities', '-\$1,240', Colors.redAccent),
+              _buildNetWorthStat('Liabilities', '-₹1,240', Colors.redAccent),
             ],
           ),
         ],
@@ -338,7 +340,7 @@ class _FinancesScreenState extends State<FinancesScreen> {
   Widget _buildBudgetSummaryCard() {
     return FCard(
       title: const Text('Monthly Spending'),
-      subtitle: const Text('\$1,250 spent of \$2,000 limit'),
+      subtitle: const Text('₹1,250 spent of ₹2,000 limit'),
       child: Padding(
         padding: const EdgeInsets.only(top: 16.0),
         child: Column(
@@ -364,7 +366,7 @@ class _FinancesScreenState extends State<FinancesScreen> {
                   ),
                 ),
                 Text(
-                  '\$750 left',
+                  '₹750 left',
                   style: TextStyle(
                     color: Colors.grey[600],
                     fontWeight: FontWeight.w500,
