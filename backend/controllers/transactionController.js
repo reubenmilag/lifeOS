@@ -136,3 +136,58 @@ export const deleteTransaction = async (request, reply) => {
     session.endSession();
   }
 };
+
+export const updateTransaction = async (request, reply) => {
+  const session = await Transaction.startSession();
+  session.startTransaction();
+
+  try {
+    const { id } = request.params;
+    const updates = request.body;
+    
+    const oldTransaction = await Transaction.findById(id);
+    if (!oldTransaction) {
+      throw new Error('Transaction not found');
+    }
+
+    // 1. Revert old transaction effects
+    const { amount: oldAmount, type: oldType, accountId: oldAccountId, toAccountId: oldToAccountId } = oldTransaction;
+
+    if (oldType === 'expense') {
+      await Account.findByIdAndUpdate(oldAccountId, { $inc: { balance: oldAmount } }, { session });
+    } else if (oldType === 'income') {
+      await Account.findByIdAndUpdate(oldAccountId, { $inc: { balance: -oldAmount } }, { session });
+    } else if (oldType === 'transfer') {
+      await Account.findByIdAndUpdate(oldAccountId, { $inc: { balance: oldAmount } }, { session });
+      if (oldToAccountId) {
+        await Account.findByIdAndUpdate(oldToAccountId, { $inc: { balance: -oldAmount } }, { session });
+      }
+    }
+
+    // 2. Update the transaction document
+    const updatedTransaction = await Transaction.findByIdAndUpdate(id, updates, { new: true, session });
+
+    // 3. Apply new transaction effects
+    const { amount: newAmount, type: newType, accountId: newAccountId, toAccountId: newToAccountId } = updatedTransaction;
+
+    if (newType === 'expense') {
+      await Account.findByIdAndUpdate(newAccountId, { $inc: { balance: -newAmount } }, { session });
+    } else if (newType === 'income') {
+      await Account.findByIdAndUpdate(newAccountId, { $inc: { balance: newAmount } }, { session });
+    } else if (newType === 'transfer') {
+      if (!newToAccountId) {
+        throw new Error('To Account is required for transfer');
+      }
+      await Account.findByIdAndUpdate(newAccountId, { $inc: { balance: -newAmount } }, { session });
+      await Account.findByIdAndUpdate(newToAccountId, { $inc: { balance: newAmount } }, { session });
+    }
+
+    await session.commitTransaction();
+    return updatedTransaction;
+  } catch (error) {
+    await session.abortTransaction();
+    reply.code(400).send({ error: error.message || 'Failed to update transaction' });
+  } finally {
+    session.endSession();
+  }
+};

@@ -4,6 +4,7 @@ import 'package:intl/intl.dart';
 import 'package:lifeos_app/models/account_model.dart';
 import 'package:lifeos_app/models/category_model.dart';
 import 'package:lifeos_app/models/transaction_model.dart';
+import 'package:lifeos_app/screens/add_transaction_screen.dart';
 import 'package:lifeos_app/services/api_service.dart';
 import 'package:lifeos_app/utils/formatters.dart';
 
@@ -308,6 +309,21 @@ class _AllTransactionsScreenState extends State<AllTransactionsScreen> {
                 },
               ),
             ),
+      floatingActionButton: FloatingActionButton(
+        onPressed: () async {
+          final result = await Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder: (context) => const AddTransactionScreen(),
+            ),
+          );
+          if (result == true) {
+            _resetAndFetch();
+          }
+        },
+        backgroundColor: Colors.black,
+        child: const Icon(Icons.add, color: Colors.white),
+      ),
     );
   }
 
@@ -402,49 +418,62 @@ class _AllTransactionsScreenState extends State<AllTransactionsScreen> {
           _deleteTransaction(transaction.id!);
         }
       },
-      child: Container(
-        margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
-        decoration: BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.circular(12),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withOpacity(0.03),
-              blurRadius: 8,
-              offset: const Offset(0, 2),
+      child: GestureDetector(
+        onTap: () async {
+          final result = await Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder: (context) => AddTransactionScreen(transaction: transaction),
             ),
-          ],
-        ),
-        child: ListTile(
-          contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-          leading: CircleAvatar(
-            backgroundColor: color.withOpacity(0.1),
-            child: Icon(icon, color: color, size: 20),
-          ),
-          title: Text(
-            transaction.description ?? 'No Description',
-            style: const TextStyle(fontWeight: FontWeight.w600),
-          ),
-          subtitle: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              const SizedBox(height: 4),
-              Text(
-                transaction.category?.name ?? 'Uncategorized',
-                style: TextStyle(fontSize: 12, color: Colors.grey[600]),
-              ),
-              Text(
-                DateFormat('MMM d, h:mm a').format(transaction.date),
-                style: TextStyle(fontSize: 11, color: Colors.grey[400]),
+          );
+          if (result == true) {
+            _resetAndFetch();
+          }
+        },
+        child: Container(
+          margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(12),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withOpacity(0.03),
+                blurRadius: 8,
+                offset: const Offset(0, 2),
               ),
             ],
           ),
-          trailing: Text(
-            '${isExpense ? '-' : (isTransfer ? '' : '+')}${Formatters.formatCurrency(transaction.amount)}',
-            style: TextStyle(
-              fontWeight: FontWeight.bold,
-              fontSize: 16,
-              color: color,
+          child: ListTile(
+            contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+            leading: CircleAvatar(
+              backgroundColor: color.withOpacity(0.1),
+              child: Icon(icon, color: color, size: 20),
+            ),
+            title: Text(
+              transaction.description ?? 'No Description',
+              style: const TextStyle(fontWeight: FontWeight.w600),
+            ),
+            subtitle: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const SizedBox(height: 4),
+                Text(
+                  transaction.category?.name ?? 'Uncategorized',
+                  style: TextStyle(fontSize: 12, color: Colors.grey[600]),
+                ),
+                Text(
+                  DateFormat('MMM d, h:mm a').format(transaction.date),
+                  style: TextStyle(fontSize: 11, color: Colors.grey[400]),
+                ),
+              ],
+            ),
+            trailing: Text(
+              '${isExpense ? '-' : (isTransfer ? '' : '+')}${Formatters.formatCurrency(transaction.amount)}',
+              style: TextStyle(
+                fontWeight: FontWeight.bold,
+                fontSize: 16,
+                color: color,
+              ),
             ),
           ),
         ),

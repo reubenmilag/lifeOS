@@ -125,6 +125,18 @@ class ApiService {
     }
   }
 
+  Future<TransactionModel> updateTransaction(TransactionModel transaction) async {
+    try {
+      final response = await _dio.put(
+        '$baseUrl/api/transactions/${transaction.id}',
+        data: transaction.toJson(),
+      );
+      return TransactionModel.fromJson(response.data);
+    } on DioException catch (e) {
+      throw Exception('Failed to update transaction: ${e.message}');
+    }
+  }
+
   Future<List<TransactionModel>> getTransactions() async {
     try {
       final response = await _dio.get('$baseUrl/api/transactions');

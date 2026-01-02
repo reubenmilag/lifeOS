@@ -8,7 +8,9 @@ import '../services/api_service.dart';
 import '../utils/currency_input_formatter.dart';
 
 class AddTransactionScreen extends StatefulWidget {
-  const AddTransactionScreen({super.key});
+  final TransactionModel? transaction;
+
+  const AddTransactionScreen({super.key, this.transaction});
 
   @override
   State<AddTransactionScreen> createState() => _AddTransactionScreenState();
@@ -35,7 +37,20 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> {
   @override
   void initState() {
     super.initState();
+    if (widget.transaction != null) {
+      _initializeWithTransaction(widget.transaction!);
+    }
     _loadData();
+  }
+
+  void _initializeWithTransaction(TransactionModel transaction) {
+    _selectedType = transaction.type;
+    _amountController.text = transaction.amount.toString();
+    _descriptionController.text = transaction.description ?? '';
+    _tagsController.text = transaction.tags?.join(', ') ?? '';
+    _selectedDate = transaction.date;
+    _selectedTime = TimeOfDay.fromDateTime(transaction.date);
+    // Account and Category selection will be handled in _loadData after fetching lists
   }
 
   Future<void> _loadData() async {
@@ -47,7 +62,21 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> {
         setState(() {
           _accounts = accounts.where((a) => a.type != 'add').toList();
           _categories = categories;
-          if (_accounts.isNotEmpty) {
+          
+          if (widget.transaction != null) {
+            // Set selected values for edit mode
+            try {
+              _selectedAccount = _accounts.firstWhere((a) => a.id == widget.transaction!.accountId);
+              if (widget.transaction!.toAccountId != null) {
+                _selectedToAccount = _accounts.firstWhere((a) => a.id == widget.transaction!.toAccountId);
+              }
+              if (widget.transaction!.categoryId != null) {
+                _selectedCategory = _categories.firstWhere((c) => c.id == widget.transaction!.categoryId);
+              }
+            } catch (e) {
+              debugPrint('Error matching transaction data: $e');
+            }
+          } else if (_accounts.isNotEmpty) {
             _selectedAccount = _accounts.first;
           }
         });
@@ -89,6 +118,7 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> {
       final cleanAmount = _amountController.text.replaceAll(',', '');
 
       final transaction = TransactionModel(
+        id: widget.transaction?.id, // Preserve ID if editing
         amount: double.parse(cleanAmount),
         type: _selectedType,
         accountId: _selectedAccount!.id!,
@@ -101,7 +131,11 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> {
         date: dateTime,
       );
 
-      await _apiService.createTransaction(transaction);
+      if (widget.transaction != null) {
+        await _apiService.updateTransaction(transaction);
+      } else {
+        await _apiService.createTransaction(transaction);
+      }
 
       if (mounted) {
         Navigator.of(context).pop(true);
@@ -130,9 +164,9 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> {
           icon: const Icon(Icons.close, color: Colors.black),
           onPressed: () => Navigator.of(context).pop(),
         ),
-        title: const Text(
-          'Add Transaction',
-          style: TextStyle(
+        title: Text(
+          widget.transaction != null ? 'Edit Transaction' : 'Add Transaction',
+          style: const TextStyle(
             color: Colors.black,
             fontWeight: FontWeight.bold,
           ),
