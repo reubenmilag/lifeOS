@@ -18,6 +18,10 @@ const accountSchema = new mongoose.Schema({
     type: Boolean,
     default: false
   },
+  accountType: {
+    type: String,
+    default: 'General'
+  },
   type: {
     type: String,
     enum: ['standard', 'add'],

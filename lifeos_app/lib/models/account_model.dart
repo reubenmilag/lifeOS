@@ -5,6 +5,7 @@ class Account {
   final String color;
   final bool isLocked;
   final String type;
+  final String accountType;
 
   Account({
     this.id,
@@ -13,6 +14,7 @@ class Account {
     required this.color,
     this.isLocked = false,
     this.type = 'standard',
+    this.accountType = 'General',
   });
 
   factory Account.fromJson(Map<String, dynamic> json) {
@@ -23,6 +25,7 @@ class Account {
       color: json['color'] ?? '#0099EE',
       isLocked: json['isLocked'] ?? false,
       type: json['type'] ?? 'standard',
+      accountType: json['accountType'] ?? 'General',
     );
   }
 
@@ -34,6 +37,7 @@ class Account {
       'color': color,
       'isLocked': isLocked,
       'type': type,
+      'accountType': accountType,
     };
   }
 }

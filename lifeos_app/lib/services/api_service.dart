@@ -14,7 +14,7 @@ class ApiService {
   static const String _ratesKey = 'currency_rates';
 
   ApiService({String? baseUrl})
-      : baseUrl = baseUrl ?? 'http://192.168.0.102:3000', // Updated to localhost for simulator/emulator access, might need 10.0.2.2 for Android
+      : baseUrl = baseUrl ?? 'http://169.254.71.101:3000', // Updated to localhost for simulator/emulator access, might need 10.0.2.2 for Android
         _dio = Dio(BaseOptions(
           connectTimeout: const Duration(seconds: 15),
           receiveTimeout: const Duration(seconds: 15),
@@ -36,6 +36,16 @@ class ApiService {
       return data.map((json) => Account.fromJson(json)).toList();
     } on DioException catch (e) {
       throw Exception('Failed to load accounts: ${e.message}');
+    }
+  }
+
+  Future<List<String>> getAccountTypes() async {
+    try {
+      final response = await _dio.get('$baseUrl/api/account-types');
+      final List<dynamic> data = response.data;
+      return data.map((json) => json['name'] as String).toList();
+    } on DioException catch (e) {
+      throw Exception('Failed to load account types: ${e.message}');
     }
   }
 

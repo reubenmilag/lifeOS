@@ -21,6 +21,8 @@ class _AccountEditScreenState extends State<AccountEditScreen> {
   
   String _selectedColor = '#0099EE';
   bool _isLoading = false;
+  List<String> _accountTypes = [];
+  String? _selectedAccountType;
 
   final List<String> _colors = [
     '#0099EE', // Blue
@@ -36,10 +38,35 @@ class _AccountEditScreenState extends State<AccountEditScreen> {
   @override
   void initState() {
     super.initState();
+    _loadAccountTypes();
     if (widget.account != null) {
       _nameController.text = widget.account!.name ?? '';
       _balanceController.text = widget.account!.balance?.toString() ?? '';
       _selectedColor = widget.account!.color;
+      _selectedAccountType = widget.account!.accountType;
+    }
+  }
+
+  Future<void> _loadAccountTypes() async {
+    try {
+      final types = await _apiService.getAccountTypes();
+      setState(() {
+        _accountTypes = types;
+        if (_selectedAccountType == null && types.isNotEmpty) {
+          _selectedAccountType = types.first;
+        }
+      });
+    } catch (e) {
+      print('Error loading account types: $e');
+      // Fallback if API fails
+      if (mounted) {
+        setState(() {
+          _accountTypes = ['General', 'Cash', 'Wallets', 'Current Account', 'Credit Card', 'Saving Account', 'Bonus', 'Insurance', 'Investment', 'Loan', 'Mortgage', 'Account with overdraft'];
+          if (_selectedAccountType == null) {
+            _selectedAccountType = _accountTypes.first;
+          }
+        });
+      }
     }
   }
 
@@ -63,6 +90,7 @@ class _AccountEditScreenState extends State<AccountEditScreen> {
         color: _selectedColor,
         isLocked: widget.account?.isLocked ?? false,
         type: 'standard',
+        accountType: _selectedAccountType ?? 'General',
       );
 
       if (widget.account == null) {
@@ -202,6 +230,45 @@ class _AccountEditScreenState extends State<AccountEditScreen> {
                 //   }
                 //   return null;
                 // },
+              ),
+
+              const SizedBox(height: 32),
+
+              // Account Type Input
+              const Text(
+                'Account Type',
+                style: TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.w600,
+                  color: Colors.black87,
+                ),
+              ),
+              const SizedBox(height: 12),
+              Container(
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(8),
+                  border: Border.all(color: Colors.grey.shade300),
+                ),
+                padding: const EdgeInsets.symmetric(horizontal: 12),
+                child: DropdownButtonHideUnderline(
+                  child: DropdownButton<String>(
+                    value: _selectedAccountType,
+                    isExpanded: true,
+                    icon: const Icon(Icons.keyboard_arrow_down),
+                    items: _accountTypes.map((type) {
+                      return DropdownMenuItem(
+                        value: type,
+                        child: Text(type),
+                      );
+                    }).toList(),
+                    onChanged: (value) {
+                      setState(() {
+                        _selectedAccountType = value;
+                      });
+                    },
+                  ),
+                ),
               ),
 
               const SizedBox(height: 32),
