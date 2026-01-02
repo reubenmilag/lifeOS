@@ -3,6 +3,7 @@ import 'package:forui/forui.dart';
 import 'package:flutter_colorpicker/flutter_colorpicker.dart';
 import '../models/account_model.dart';
 import '../services/api_service.dart';
+import '../utils/currency_input_formatter.dart';
 
 class AccountEditScreen extends StatefulWidget {
   final Account? account;
@@ -41,7 +42,16 @@ class _AccountEditScreenState extends State<AccountEditScreen> {
     _loadAccountTypes();
     if (widget.account != null) {
       _nameController.text = widget.account!.name ?? '';
-      _balanceController.text = widget.account!.balance?.toString() ?? '';
+      // Format initial value if exists
+      if (widget.account!.balance != null) {
+        // We use a temporary formatter just to format the initial string
+        final formatter = CurrencyInputFormatter();
+        final initialValue = TextEditingValue(text: widget.account!.balance!.toString());
+        _balanceController.text = formatter.formatEditUpdate(
+          TextEditingValue.empty, 
+          initialValue
+        ).text;
+      }
       _selectedColor = widget.account!.color;
       _selectedAccountType = widget.account!.accountType;
     }
@@ -83,10 +93,13 @@ class _AccountEditScreenState extends State<AccountEditScreen> {
     setState(() => _isLoading = true);
 
     try {
+      // Clean the balance string before parsing (remove commas)
+      final cleanBalance = _balanceController.text.replaceAll(',', '');
+      
       final account = Account(
         id: widget.account?.id,
         name: _nameController.text,
-        balance: double.tryParse(_balanceController.text) ?? 0.0,
+        balance: double.tryParse(cleanBalance) ?? 0.0,
         color: _selectedColor,
         isLocked: widget.account?.isLocked ?? false,
         type: 'standard',
@@ -184,6 +197,7 @@ class _AccountEditScreenState extends State<AccountEditScreen> {
                       child: TextFormField(
                         controller: _balanceController,
                         keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                        inputFormatters: [CurrencyInputFormatter()],
                         textAlign: TextAlign.center,
                         style: const TextStyle(
                           fontSize: 40,
@@ -198,7 +212,9 @@ class _AccountEditScreenState extends State<AccountEditScreen> {
                           if (value == null || value.isEmpty) {
                             return 'Please enter a balance';
                           }
-                          if (double.tryParse(value) == null) {
+                          // Remove commas for validation
+                          final cleanValue = value.replaceAll(',', '');
+                          if (double.tryParse(cleanValue) == null) {
                             return 'Invalid number';
                           }
                           return null;

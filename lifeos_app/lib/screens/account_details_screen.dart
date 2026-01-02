@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import '../models/account_model.dart';
 import '../services/api_service.dart';
 import 'account_edit_screen.dart';
+import '../utils/formatters.dart';
 
 class AccountDetailsScreen extends StatelessWidget {
   final Account account;
@@ -77,7 +78,7 @@ class AccountDetailsScreen extends StatelessWidget {
                   ),
                   const SizedBox(height: 8),
                   Text(
-                    '₹${account.balance?.toStringAsFixed(2) ?? '0.00'}',
+                    Formatters.formatCurrency(account.balance ?? 0),
                     style: const TextStyle(
                       color: Colors.white,
                       fontSize: 32,

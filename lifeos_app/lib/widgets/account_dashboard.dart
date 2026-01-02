@@ -2,6 +2,9 @@ import 'package:flutter/material.dart';
 import '../models/account_model.dart';
 import '../screens/account_details_screen.dart';
 import '../screens/account_edit_screen.dart';
+import '../screens/account_group_screen.dart';
+import '../screens/all_accounts_screen.dart';
+import '../utils/formatters.dart';
 
 class AccountDashboard extends StatelessWidget {
   final List<Account> accounts;
@@ -15,6 +18,30 @@ class AccountDashboard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    // Group accounts by type
+    final Map<String, List<Account>> groupedAccounts = {};
+    Account? addAccountCard;
+
+    for (var account in accounts) {
+      if (account.type == 'add') {
+        addAccountCard = account;
+        continue;
+      }
+      if (!groupedAccounts.containsKey(account.accountType)) {
+        groupedAccounts[account.accountType] = [];
+      }
+      groupedAccounts[account.accountType]!.add(account);
+    }
+
+    // Filter groups with non-zero total balance
+    final List<MapEntry<String, List<Account>>> displayGroups = [];
+    groupedAccounts.forEach((type, list) {
+      double total = list.fold(0, (sum, item) => sum + (item.balance ?? 0));
+      if (total != 0) {
+        displayGroups.add(MapEntry(type, list));
+      }
+    });
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -32,11 +59,25 @@ class AccountDashboard extends StatelessWidget {
                   color: Colors.black87,
                 ),
               ),
-              IconButton(
-                icon: const Icon(Icons.settings),
+              TextButton(
                 onPressed: () {
-                  // Handle settings tap
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) => AllAccountsScreen(
+                        accounts: accounts,
+                        onRefresh: onRefresh,
+                      ),
+                    ),
+                  );
                 },
+                child: const Text(
+                  'View All',
+                  style: TextStyle(
+                    fontWeight: FontWeight.bold,
+                    fontSize: 14,
+                  ),
+                ),
               ),
             ],
           ),
@@ -56,6 +97,9 @@ class AccountDashboard extends StatelessWidget {
                 crossAxisCount = 4;
               }
 
+              // Total items = groups + add card (if exists)
+              int itemCount = displayGroups.length + (addAccountCard != null ? 1 : 0);
+
               return GridView.builder(
                 shrinkWrap: true,
                 physics: const NeverScrollableScrollPhysics(),
@@ -65,38 +109,58 @@ class AccountDashboard extends StatelessWidget {
                   mainAxisSpacing: 10,
                   childAspectRatio: 1.6, // Adjust aspect ratio as needed
                 ),
-                itemCount: accounts.length,
+                itemCount: itemCount,
                 itemBuilder: (context, index) {
-                  final account = accounts[index];
-                  return GestureDetector(
-                    onTap: () async {
-                      bool? shouldRefresh;
-                      if (account.type != 'add') {
-                        shouldRefresh = await Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                            builder: (context) => AccountDetailsScreen(account: account),
-                          ),
-                        );
-                      } else {
-                        shouldRefresh = await Navigator.push(
+                  // If it's the last item and we have an add card, show it
+                  if (addAccountCard != null && index == displayGroups.length) {
+                    return GestureDetector(
+                      onTap: () async {
+                        final result = await Navigator.push(
                           context,
                           MaterialPageRoute(
                             builder: (context) => const AccountEditScreen(),
                           ),
                         );
-                      }
-                      
-                      if (shouldRefresh == true && onRefresh != null) {
+                        if (result == true && onRefresh != null) {
+                          onRefresh!();
+                        }
+                      },
+                      child: AccountCard(
+                        color: _parseColor(addAccountCard!.color),
+                        type: 'add',
+                      ),
+                    );
+                  }
+
+                  final entry = displayGroups[index];
+                  final groupName = entry.key;
+                  final groupAccounts = entry.value;
+                  final totalBalance = groupAccounts.fold(0.0, (sum, item) => sum + (item.balance ?? 0));
+                  // Use the color of the first account in the group, or a default
+                  final groupColor = groupAccounts.isNotEmpty ? _parseColor(groupAccounts.first.color) : Colors.blue;
+
+                  return GestureDetector(
+                    onTap: () async {
+                      final result = await Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (context) => AccountGroupScreen(
+                            accountType: groupName,
+                            accounts: groupAccounts,
+                            onRefresh: onRefresh,
+                          ),
+                        ),
+                      );
+                      if (result == true && onRefresh != null) {
                         onRefresh!();
                       }
                     },
                     child: AccountCard(
-                      name: account.name,
-                      balance: account.balance,
-                      color: _parseColor(account.color),
-                      type: account.type,
-                      isLocked: account.isLocked,
+                      name: groupName,
+                      balance: totalBalance,
+                      color: groupColor,
+                      type: 'standard',
+                      isLocked: false, // Groups aren't locked
                     ),
                   );
                 },
@@ -172,7 +236,7 @@ class AccountCard extends StatelessWidget {
             ],
           ),
           Text(
-            '₹${balance?.toStringAsFixed(2) ?? '0.00'}',
+            Formatters.formatCurrency(balance ?? 0),
             style: const TextStyle(
               color: Colors.white,
               fontSize: 18,

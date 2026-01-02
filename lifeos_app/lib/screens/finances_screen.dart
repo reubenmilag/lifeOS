@@ -9,6 +9,7 @@ import 'package:lifeos_app/models/transaction_model.dart';
 import 'package:lifeos_app/screens/add_transaction_screen.dart';
 import 'package:lifeos_app/screens/all_transactions_screen.dart';
 import 'package:lifeos_app/widgets/transaction_list.dart';
+import 'package:lifeos_app/utils/formatters.dart';
 
 class FinancesScreen extends StatefulWidget {
   const FinancesScreen({super.key});
@@ -114,7 +115,28 @@ class _FinancesScreenState extends State<FinancesScreen> {
     return ListView(
       padding: const EdgeInsets.all(20),
       children: [
-        _buildNetWorthCard(),
+        FutureBuilder<List<Account>>(
+          future: _accountsFuture,
+          builder: (context, snapshot) {
+            double assets = 0;
+            double liabilities = 0;
+            
+            if (snapshot.hasData) {
+              for (var account in snapshot.data!) {
+                if (account.type == 'add') continue;
+                
+                final balance = account.balance ?? 0;
+                if (['Credit Card', 'Loan', 'Mortgage', 'Account with overdraft'].contains(account.accountType)) {
+                  liabilities += balance;
+                } else {
+                  assets += balance;
+                }
+              }
+            }
+            
+            return _buildNetWorthCard(assets, liabilities);
+          },
+        ),
         const SizedBox(height: 24),
         FutureBuilder<List<Account>>(
           future: _accountsFuture,
@@ -195,7 +217,7 @@ class _FinancesScreenState extends State<FinancesScreen> {
                     padding: const EdgeInsets.only(bottom: 16.0),
                     child: _buildBudgetItem(
                       budget.name,
-                      '₹${budget.spent.toInt()} / ₹${budget.limit.toInt()}',
+                      '${Formatters.formatCurrency(budget.spent)} / ${Formatters.formatCurrency(budget.limit)}',
                       budget.progress,
                       _parseColor(budget.color),
                       _getIcon(budget.icon),
@@ -232,7 +254,7 @@ class _FinancesScreenState extends State<FinancesScreen> {
                     padding: const EdgeInsets.only(bottom: 16.0),
                     child: _buildGoalItem(
                       goal.name,
-                      '₹${goal.saved.toInt()} / ₹${goal.target.toInt()}',
+                      '${Formatters.formatCurrency(goal.saved)} / ${Formatters.formatCurrency(goal.target)}',
                       goal.progress,
                       _parseColor(goal.color),
                     ),
@@ -267,7 +289,9 @@ class _FinancesScreenState extends State<FinancesScreen> {
     }
   }
 
-  Widget _buildNetWorthCard() {
+  Widget _buildNetWorthCard(double assets, double liabilities) {
+    final netWorth = assets - liabilities;
+    
     return Container(
       padding: const EdgeInsets.all(24),
       decoration: BoxDecoration(
@@ -297,9 +321,9 @@ class _FinancesScreenState extends State<FinancesScreen> {
             ),
           ),
           const SizedBox(height: 8),
-          const Text(
-            '₹84,750.70',
-            style: TextStyle(
+          Text(
+            Formatters.formatCurrency(netWorth),
+            style: const TextStyle(
               color: Colors.white,
               fontSize: 36,
               fontWeight: FontWeight.bold,
@@ -309,9 +333,9 @@ class _FinancesScreenState extends State<FinancesScreen> {
           const SizedBox(height: 24),
           Row(
             children: [
-              _buildNetWorthStat('Assets', '₹85,990', Colors.greenAccent),
+              _buildNetWorthStat('Assets', Formatters.formatCurrency(assets), Colors.greenAccent),
               const SizedBox(width: 24),
-              _buildNetWorthStat('Liabilities', '-₹1,240', Colors.redAccent),
+              _buildNetWorthStat('Liabilities', '-${Formatters.formatCurrency(liabilities)}', Colors.redAccent),
             ],
           ),
         ],

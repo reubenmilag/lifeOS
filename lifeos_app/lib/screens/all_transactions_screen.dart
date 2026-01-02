@@ -5,6 +5,7 @@ import 'package:lifeos_app/models/account_model.dart';
 import 'package:lifeos_app/models/category_model.dart';
 import 'package:lifeos_app/models/transaction_model.dart';
 import 'package:lifeos_app/services/api_service.dart';
+import 'package:lifeos_app/utils/formatters.dart';
 
 class AllTransactionsScreen extends StatefulWidget {
   const AllTransactionsScreen({super.key});
@@ -331,7 +332,7 @@ class _AllTransactionsScreenState extends State<AllTransactionsScreen> {
               const SizedBox(height: 4),
               if (closingBalance != null)
                 Text(
-                  'Closing Balance: ₹${closingBalance.toStringAsFixed(2)}',
+                  'Closing Balance: ${Formatters.formatCurrency(closingBalance)}',
                   style: TextStyle(
                     fontSize: 12,
                     color: Colors.grey[600],
@@ -348,7 +349,7 @@ class _AllTransactionsScreenState extends State<AllTransactionsScreen> {
                 style: TextStyle(fontSize: 10, color: Colors.grey),
               ),
               Text(
-                '${netFlow >= 0 ? '+' : ''}${netFlow.toStringAsFixed(2)}',
+                '${netFlow >= 0 ? '+' : ''}${Formatters.formatCurrency(netFlow)}',
                 style: TextStyle(
                   fontSize: 14,
                   fontWeight: FontWeight.bold,
@@ -439,7 +440,7 @@ class _AllTransactionsScreenState extends State<AllTransactionsScreen> {
             ],
           ),
           trailing: Text(
-            '${isExpense ? '-' : (isTransfer ? '' : '+')}₹${transaction.amount.toStringAsFixed(2)}',
+            '${isExpense ? '-' : (isTransfer ? '' : '+')}${Formatters.formatCurrency(transaction.amount)}',
             style: TextStyle(
               fontWeight: FontWeight.bold,
               fontSize: 16,

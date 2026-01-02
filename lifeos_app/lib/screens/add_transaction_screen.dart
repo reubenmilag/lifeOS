@@ -5,6 +5,7 @@ import '../models/account_model.dart';
 import '../models/category_model.dart';
 import '../models/transaction_model.dart';
 import '../services/api_service.dart';
+import '../utils/currency_input_formatter.dart';
 
 class AddTransactionScreen extends StatefulWidget {
   const AddTransactionScreen({super.key});
@@ -84,8 +85,11 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> {
         _selectedTime.minute,
       );
 
+      // Clean the amount string before parsing (remove commas)
+      final cleanAmount = _amountController.text.replaceAll(',', '');
+
       final transaction = TransactionModel(
-        amount: double.parse(_amountController.text),
+        amount: double.parse(cleanAmount),
         type: _selectedType,
         accountId: _selectedAccount!.id!,
         toAccountId: _selectedToAccount?.id,
@@ -191,6 +195,7 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> {
                   child: TextFormField(
                     controller: _amountController,
                     keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                    inputFormatters: [CurrencyInputFormatter()],
                     textAlign: TextAlign.center,
                     style: const TextStyle(
                       fontSize: 40,
@@ -205,7 +210,9 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> {
                       if (value == null || value.isEmpty) {
                         return 'Enter amount';
                       }
-                      if (double.tryParse(value) == null) {
+                      // Remove commas for validation
+                      final cleanValue = value.replaceAll(',', '');
+                      if (double.tryParse(cleanValue) == null) {
                         return 'Invalid amount';
                       }
                       return null;

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import '../models/transaction_model.dart';
+import '../utils/formatters.dart';
 
 class TransactionList extends StatelessWidget {
   final List<TransactionModel> transactions;
@@ -155,7 +156,7 @@ class TransactionList extends StatelessWidget {
             crossAxisAlignment: CrossAxisAlignment.end,
             children: [
               Text(
-                '$prefix₹${transaction.amount.toStringAsFixed(0)}', // Removed decimals for compactness
+                '$prefix${Formatters.formatCurrency(transaction.amount)}', // Removed decimals for compactness
                 style: TextStyle(
                   color: amountColor,
                   fontWeight: FontWeight.w600,
