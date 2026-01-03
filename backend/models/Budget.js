@@ -21,6 +21,26 @@ const budgetSchema = new mongoose.Schema({
   icon: {
     type: String,
     default: 'shoppingCart' // Default icon name
+  },
+  period: {
+    type: String,
+    enum: ['Week', 'Month', 'Year', 'One Time'],
+    required: true,
+    default: 'Month'
+  },
+  startDate: {
+    type: Date
+  },
+  endDate: {
+    type: Date
+  },
+  category: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'Category'
+  },
+  account: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'Account'
   }
 }, {
   timestamps: true,

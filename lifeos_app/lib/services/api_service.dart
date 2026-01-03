@@ -91,6 +91,38 @@ class ApiService {
     }
   }
 
+  Future<Budget> createBudget(Budget budget) async {
+    try {
+      final response = await _dio.post(
+        '$baseUrl/api/budgets',
+        data: budget.toJson(),
+      );
+      return Budget.fromJson(response.data);
+    } on DioException catch (e) {
+      throw Exception('Failed to create budget: ${e.message}');
+    }
+  }
+
+  Future<Budget> updateBudget(Budget budget) async {
+    try {
+      final response = await _dio.put(
+        '$baseUrl/api/budgets/${budget.id}',
+        data: budget.toJson(),
+      );
+      return Budget.fromJson(response.data);
+    } on DioException catch (e) {
+      throw Exception('Failed to update budget: ${e.message}');
+    }
+  }
+
+  Future<void> deleteBudget(String id) async {
+    try {
+      await _dio.delete('$baseUrl/api/budgets/$id');
+    } on DioException catch (e) {
+      throw Exception('Failed to delete budget: ${e.message}');
+    }
+  }
+
   Future<List<Goal>> getGoals() async {
     try {
       final response = await _dio.get('$baseUrl/api/goals');

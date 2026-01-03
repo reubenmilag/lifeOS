@@ -13,6 +13,9 @@ import 'package:lifeos_app/screens/all_transactions_screen.dart';
 import 'package:lifeos_app/widgets/transaction_list.dart';
 import 'package:lifeos_app/utils/formatters.dart';
 import 'package:flutter_speed_dial/flutter_speed_dial.dart';
+import 'package:fl_chart/fl_chart.dart';
+
+import 'package:lifeos_app/screens/budget_detail_screen.dart';
 
 class FinancesScreen extends StatefulWidget {
   const FinancesScreen({super.key});
@@ -36,9 +39,7 @@ class _FinancesScreenState extends State<FinancesScreen> with SingleTickerProvid
     _tabController.addListener(() {
       setState(() {});
     });
-    _refreshAccounts();
-    _budgetsFuture = _apiService.getBudgets();
-    _goalsFuture = _apiService.getGoals();
+    _refreshData();
   }
 
   @override
@@ -47,10 +48,12 @@ class _FinancesScreenState extends State<FinancesScreen> with SingleTickerProvid
     super.dispose();
   }
 
-  void _refreshAccounts() {
+  void _refreshData() {
     setState(() {
       _accountsFuture = _apiService.getAccounts();
       _transactionsFuture = _apiService.getTransactions();
+      _budgetsFuture = _apiService.getBudgets();
+      _goalsFuture = _apiService.getGoals();
     });
   }
 
@@ -118,7 +121,7 @@ class _FinancesScreenState extends State<FinancesScreen> with SingleTickerProvid
                 );
 
                 if (result == true) {
-                  _refreshAccounts();
+                  _refreshData();
                 }
               },
               backgroundColor: Colors.black,
@@ -137,13 +140,17 @@ class _FinancesScreenState extends State<FinancesScreen> with SingleTickerProvid
                   backgroundColor: Colors.black,
                   foregroundColor: Colors.white,
                   label: 'Add Budget',
-                  onTap: () {
-                    Navigator.push(
+                  onTap: () async {
+                    final result = await Navigator.push(
                       context,
                       MaterialPageRoute(
                         builder: (context) => const AddBudgetScreen(),
                       ),
                     );
+
+                    if (result == true) {
+                      _refreshData();
+                    }
                   },
                 ),
                 SpeedDialChild(
@@ -151,13 +158,17 @@ class _FinancesScreenState extends State<FinancesScreen> with SingleTickerProvid
                   backgroundColor: Colors.black,
                   foregroundColor: Colors.white,
                   label: 'Add Goal',
-                  onTap: () {
-                    Navigator.push(
+                  onTap: () async {
+                    final result = await Navigator.push(
                       context,
                       MaterialPageRoute(
                         builder: (context) => const AddGoalScreen(),
                       ),
                     );
+
+                    if (result == true) {
+                      _refreshData();
+                    }
                   },
                 ),
               ],
@@ -204,7 +215,7 @@ class _FinancesScreenState extends State<FinancesScreen> with SingleTickerProvid
             } else {
               return AccountDashboard(
                 accounts: snapshot.data!,
-                onRefresh: _refreshAccounts,
+                onRefresh: _refreshData,
               );
             }
           },
@@ -244,7 +255,21 @@ class _FinancesScreenState extends State<FinancesScreen> with SingleTickerProvid
     return ListView(
       padding: const EdgeInsets.all(20),
       children: [
-        _buildBudgetSummaryCard(),
+        FutureBuilder<List<TransactionModel>>(
+          future: _transactionsFuture,
+          builder: (context, snapshot) {
+            if (snapshot.connectionState == ConnectionState.waiting) {
+              return const SizedBox(
+                height: 200,
+                child: Center(child: CircularProgressIndicator()),
+              );
+            } else if (snapshot.hasError) {
+              return Text('Error loading expenses: ${snapshot.error}');
+            } else {
+              return _buildExpensesStructure(snapshot.data ?? []);
+            }
+          },
+        ),
         const SizedBox(height: 24),
         const Text(
           'Monthly Budgets',
@@ -269,13 +294,7 @@ class _FinancesScreenState extends State<FinancesScreen> with SingleTickerProvid
                 children: snapshot.data!.map((budget) {
                   return Padding(
                     padding: const EdgeInsets.only(bottom: 16.0),
-                    child: _buildBudgetItem(
-                      budget.name,
-                      '${Formatters.formatCurrency(budget.spent)} / ${Formatters.formatCurrency(budget.limit)}',
-                      budget.progress,
-                      _parseColor(budget.color),
-                      _getIcon(budget.icon),
-                    ),
+                    child: _buildCompactBudgetItem(budget),
                   );
                 }).toList(),
               );
@@ -319,6 +338,202 @@ class _FinancesScreenState extends State<FinancesScreen> with SingleTickerProvid
           },
         ),
       ],
+    );
+  }
+
+  Widget _buildExpensesStructure(List<TransactionModel> transactions) {
+    final now = DateTime.now();
+    final currentMonthStart = DateTime(now.year, now.month, 1);
+    final currentYearStart = DateTime(now.year, 1, 1);
+
+    final expenseTransactions =
+        transactions.where((t) => t.type == 'expense').toList();
+
+    final monthlyExpenses = expenseTransactions
+        .where((t) =>
+            t.date.isAfter(currentMonthStart) ||
+            t.date.isAtSameMomentAs(currentMonthStart))
+        .toList();
+    final yearlyExpenses = expenseTransactions
+        .where((t) =>
+            t.date.isAfter(currentYearStart) ||
+            t.date.isAtSameMomentAs(currentYearStart))
+        .toList();
+
+    final monthlyTotal =
+        monthlyExpenses.fold(0.0, (sum, t) => sum + t.amount);
+    final yearlyTotal =
+        yearlyExpenses.fold(0.0, (sum, t) => sum + t.amount);
+
+    final daysInMonth = now.difference(currentMonthStart).inDays + 1;
+    final daysInYear = now.difference(currentYearStart).inDays + 1;
+
+    // Helper to group by category
+    Map<String, double> groupByCategory(List<TransactionModel> txns) {
+      final map = <String, double>{};
+      for (var t in txns) {
+        final catName = t.category?.name ?? 'Uncategorized';
+        map[catName] = (map[catName] ?? 0) + t.amount;
+      }
+      return map;
+    }
+
+    // Helper to get color map
+    Map<String, Color> getCategoryColors(List<TransactionModel> txns) {
+      final map = <String, Color>{};
+      for (var t in txns) {
+        final catName = t.category?.name ?? 'Uncategorized';
+        if (!map.containsKey(catName)) {
+          map[catName] = t.category != null
+              ? _parseColor(t.category!.color)
+              : Colors.grey;
+        }
+      }
+      return map;
+    }
+
+    final monthlyBreakdown = groupByCategory(monthlyExpenses);
+    final yearlyBreakdown = groupByCategory(yearlyExpenses);
+
+    // Combine all categories for legend
+    final allCategories = {
+      ...monthlyBreakdown.keys,
+      ...yearlyBreakdown.keys
+    }.toList();
+    final categoryColors = getCategoryColors(
+        expenseTransactions); // Get colors from all expenses to be safe
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        const Text(
+          'Expenses Structure',
+          style: TextStyle(
+            fontSize: 20,
+            fontWeight: FontWeight.bold,
+            letterSpacing: -0.5,
+          ),
+        ),
+        const SizedBox(height: 24),
+        Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Expanded(
+              child: _buildChartColumn(
+                'Monthly Expenses',
+                'LAST $daysInMonth DAYS',
+                monthlyTotal,
+                monthlyBreakdown,
+                categoryColors,
+              ),
+            ),
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 8),
+              child: Container(
+                height: 180,
+                width: 1,
+                color: Colors.grey.withOpacity(0.1),
+              ),
+            ),
+            Expanded(
+              child: _buildChartColumn(
+                'Yearly Expenses',
+                'LAST $daysInYear DAYS',
+                yearlyTotal,
+                yearlyBreakdown,
+                categoryColors,
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 24),
+        _buildLegend(allCategories, categoryColors),
+        const SizedBox(height: 16),
+        Center(
+          child: TextButton(
+            onPressed: () {
+              // Navigate to detailed breakdown view (placeholder)
+            },
+            child: const Text('Show more', style: TextStyle(color: Colors.grey)),
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildChartColumn(String title, String subtitle, double total,
+      Map<String, double> breakdown, Map<String, Color> colors) {
+    return Column(
+      children: [
+        SizedBox(
+          height: 120,
+          child: breakdown.isEmpty
+              ? Center(
+                  child: Container(
+                    width: 80,
+                    height: 80,
+                    decoration: BoxDecoration(
+                      shape: BoxShape.circle,
+                      border: Border.all(color: Colors.grey.withOpacity(0.2), width: 8),
+                    ),
+                  ),
+                )
+              : PieChart(
+                  PieChartData(
+                    sectionsSpace: 0,
+                    centerSpaceRadius: 30,
+                    sections: breakdown.entries.map((e) {
+                      return PieChartSectionData(
+                        color: colors[e.key],
+                        value: e.value,
+                        title: '',
+                        radius: 20,
+                      );
+                    }).toList(),
+                  ),
+                ),
+        ),
+        const SizedBox(height: 16),
+        Text(title,
+            textAlign: TextAlign.center,
+            style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),
+        const SizedBox(height: 4),
+        Text(subtitle,
+            textAlign: TextAlign.center,
+            style: TextStyle(
+                color: Colors.grey[600],
+                fontSize: 10,
+                fontWeight: FontWeight.w600)),
+        const SizedBox(height: 4),
+        Text(Formatters.formatCurrency(total),
+            textAlign: TextAlign.center,
+            style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
+      ],
+    );
+  }
+
+  Widget _buildLegend(List<String> categories, Map<String, Color> colors) {
+    return Wrap(
+      spacing: 16,
+      runSpacing: 8,
+      alignment: WrapAlignment.center,
+      children: categories.map((cat) {
+        return Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Container(
+              width: 12,
+              height: 12,
+              decoration: BoxDecoration(
+                color: colors[cat],
+                shape: BoxShape.circle,
+              ),
+            ),
+            const SizedBox(width: 8),
+            Text(cat, style: const TextStyle(fontSize: 12, color: Colors.grey)),
+          ],
+        );
+      }).toList(),
     );
   }
 
@@ -415,105 +630,173 @@ class _FinancesScreenState extends State<FinancesScreen> with SingleTickerProvid
     );
   }
 
-  Widget _buildBudgetSummaryCard() {
-    return FCard(
-      title: const Text('Monthly Spending'),
-      subtitle: const Text('₹1,250 spent of ₹2,000 limit'),
-      child: Padding(
-        padding: const EdgeInsets.only(top: 16.0),
-        child: Column(
-          children: [
-            ClipRRect(
-              borderRadius: BorderRadius.circular(8),
-              child: LinearProgressIndicator(
-                value: 0.625,
-                minHeight: 12,
-                backgroundColor: Colors.grey[200],
-                valueColor: const AlwaysStoppedAnimation(Colors.black),
-              ),
-            ),
-            const SizedBox(height: 8),
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                Text(
-                  '62.5% Used',
-                  style: TextStyle(
-                    color: Colors.grey[600],
-                    fontWeight: FontWeight.w500,
-                  ),
-                ),
-                Text(
-                  '₹750 left',
-                  style: TextStyle(
-                    color: Colors.grey[600],
-                    fontWeight: FontWeight.w500,
-                  ),
-                ),
-              ],
-            ),
-          ],
-        ),
-      ),
-    );
-  }
 
-  Widget _buildBudgetItem(
-    String name,
-    String amount,
-    double progress,
-    Color color,
-    SvgAsset icon,
-  ) {
+
+  Widget _buildCompactBudgetItem(Budget budget) {
+    final now = DateTime.now();
+    final lastDayOfMonth = DateTime(now.year, now.month + 1, 0);
+    final remainingDays = lastDayOfMonth.day - now.day;
+    final daysPassed = now.day;
+    final monthProgress = daysPassed / lastDayOfMonth.day;
+
+    final remainingAmount = budget.limit - budget.spent;
+    final dailyRemaining =
+        remainingDays > 0 ? remainingAmount / remainingDays : 0.0;
+
+    final percentage = (budget.spent / budget.limit).clamp(0.0, 1.0);
+    final percentageValue = (budget.spent / budget.limit) * 100;
+
+    Color progressColor;
+    if (percentageValue > 90) {
+      progressColor = Colors.red;
+    } else if (percentageValue > 70) {
+      progressColor = Colors.orange;
+    } else {
+      progressColor = Colors.green;
+    }
+
+    final budgetColor = _parseColor(budget.color);
+
     return Container(
-      padding: const EdgeInsets.all(16),
+      margin: const EdgeInsets.only(bottom: 0),
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: Colors.grey.withOpacity(0.1)),
+        borderRadius: BorderRadius.circular(12),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.05),
+            blurRadius: 6,
+            offset: const Offset(0, 4),
+            spreadRadius: -1,
+          )
+        ],
       ),
-      child: Column(
-        children: [
-          Row(
+      child: InkWell(
+        onTap: () async {
+          final result = await Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder: (context) => BudgetDetailScreen(budget: budget),
+            ),
+          );
+          if (result == true) {
+            _refreshData();
+          }
+        },
+        borderRadius: BorderRadius.circular(12),
+        child: Padding(
+          padding: const EdgeInsets.all(12.0),
+          child: Column(
             children: [
-              Container(
-                padding: const EdgeInsets.all(10),
-                decoration: BoxDecoration(
-                  color: color.withOpacity(0.1),
-                  borderRadius: BorderRadius.circular(10),
-                ),
-                child: FIcon(icon, color: color, size: 20),
-              ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: Text(
-                  name,
-                  style: const TextStyle(
-                    fontWeight: FontWeight.w600,
-                    fontSize: 16,
+              Row(
+                children: [
+                  Container(
+                    width: 36,
+                    height: 36,
+                    decoration: BoxDecoration(
+                      color: budgetColor.withOpacity(0.1),
+                      shape: BoxShape.circle,
+                    ),
+                    alignment: Alignment.center,
+                    child: FIcon(_getIcon(budget.icon),
+                        color: budgetColor, size: 18),
                   ),
-                ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          budget.name,
+                          style: const TextStyle(
+                            fontWeight: FontWeight.w600,
+                            fontSize: 15,
+                          ),
+                        ),
+                        const SizedBox(height: 2),
+                        RichText(
+                          text: TextSpan(
+                            style: const TextStyle(color: Colors.black),
+                            children: [
+                              TextSpan(
+                                text: Formatters.formatCurrency(budget.spent),
+                                style: const TextStyle(
+                                  fontWeight: FontWeight.bold,
+                                  fontSize: 13,
+                                ),
+                              ),
+                              TextSpan(
+                                text:
+                                    ' / ${Formatters.formatCurrency(budget.limit)}',
+                                style: TextStyle(
+                                  fontWeight: FontWeight.w400,
+                                  fontSize: 11,
+                                  color: Colors.grey[600],
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  Column(
+                    crossAxisAlignment: CrossAxisAlignment.end,
+                    children: [
+                      Text(
+                        '${percentageValue.toStringAsFixed(0)}%',
+                        style: TextStyle(
+                          color: progressColor,
+                          fontSize: 13,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                      const SizedBox(height: 2),
+                      Text(
+                        '${Formatters.formatCurrency(dailyRemaining)} / day left',
+                        style: TextStyle(
+                          color: Colors.grey[600],
+                          fontSize: 10,
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
               ),
-              Text(
-                amount,
-                style: const TextStyle(
-                  fontWeight: FontWeight.w600,
-                  fontSize: 14,
+              const SizedBox(height: 12),
+              SizedBox(
+                height: 6,
+                child: Stack(
+                  children: [
+                    Container(
+                      decoration: BoxDecoration(
+                        color: const Color(0xFFF3F4F6),
+                        borderRadius: BorderRadius.circular(999),
+                      ),
+                    ),
+                    FractionallySizedBox(
+                      widthFactor: percentage,
+                      child: Container(
+                        decoration: BoxDecoration(
+                          color: progressColor,
+                          borderRadius: BorderRadius.circular(999),
+                        ),
+                      ),
+                    ),
+                    Align(
+                      alignment: Alignment((monthProgress * 2) - 1, 0),
+                      child: Container(
+                        width: 2,
+                        height: 6,
+                        color: Colors.black,
+                      ),
+                    ),
+                  ],
                 ),
               ),
             ],
           ),
-          const SizedBox(height: 12),
-          ClipRRect(
-            borderRadius: BorderRadius.circular(4),
-            child: LinearProgressIndicator(
-              value: progress,
-              minHeight: 8,
-              backgroundColor: color.withOpacity(0.1),
-              valueColor: AlwaysStoppedAnimation(color),
-            ),
-          ),
-        ],
+        ),
       ),
     );
   }
