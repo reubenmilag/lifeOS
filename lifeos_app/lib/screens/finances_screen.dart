@@ -7,9 +7,12 @@ import 'package:lifeos_app/models/budget_model.dart';
 import 'package:lifeos_app/models/goal_model.dart';
 import 'package:lifeos_app/models/transaction_model.dart';
 import 'package:lifeos_app/screens/add_transaction_screen.dart';
+import 'package:lifeos_app/screens/add_budget_screen.dart';
+import 'package:lifeos_app/screens/add_goal_screen.dart';
 import 'package:lifeos_app/screens/all_transactions_screen.dart';
 import 'package:lifeos_app/widgets/transaction_list.dart';
 import 'package:lifeos_app/utils/formatters.dart';
+import 'package:flutter_speed_dial/flutter_speed_dial.dart';
 
 class FinancesScreen extends StatefulWidget {
   const FinancesScreen({super.key});
@@ -18,19 +21,30 @@ class FinancesScreen extends StatefulWidget {
   State<FinancesScreen> createState() => _FinancesScreenState();
 }
 
-class _FinancesScreenState extends State<FinancesScreen> {
+class _FinancesScreenState extends State<FinancesScreen> with SingleTickerProviderStateMixin {
   final ApiService _apiService = ApiService();
   late Future<List<Account>> _accountsFuture;
   late Future<List<Budget>> _budgetsFuture;
   late Future<List<Goal>> _goalsFuture;
   late Future<List<TransactionModel>> _transactionsFuture;
+  late TabController _tabController;
 
   @override
   void initState() {
     super.initState();
+    _tabController = TabController(length: 2, vsync: this);
+    _tabController.addListener(() {
+      setState(() {});
+    });
     _refreshAccounts();
     _budgetsFuture = _apiService.getBudgets();
     _goalsFuture = _apiService.getGoals();
+  }
+
+  @override
+  void dispose() {
+    _tabController.dispose();
+    super.dispose();
   }
 
   void _refreshAccounts() {
@@ -42,72 +56,112 @@ class _FinancesScreenState extends State<FinancesScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return DefaultTabController(
-      length: 2,
-      child: Scaffold(
+    return Scaffold(
+      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
+      appBar: AppBar(
         backgroundColor: Theme.of(context).scaffoldBackgroundColor,
-        appBar: AppBar(
-          backgroundColor: Theme.of(context).scaffoldBackgroundColor,
-          elevation: 0,
-          centerTitle: false,
-          title: const Padding(
-            padding: EdgeInsets.only(left: 8.0),
-            child: Text(
-              'Finances',
-              style: TextStyle(
-                fontSize: 34,
-                fontWeight: FontWeight.bold,
-                color: Colors.black,
-                letterSpacing: -1.0,
-              ),
-            ),
-          ),
-          bottom: PreferredSize(
-            preferredSize: const Size.fromHeight(48),
-            child: Container(
-              decoration: BoxDecoration(
-                border: Border(
-                  bottom: BorderSide(
-                    color: Colors.grey.withOpacity(0.2),
-                    width: 1,
-                  ),
-                ),
-              ),
-              child: const TabBar(
-                labelColor: Colors.black,
-                unselectedLabelColor: Colors.grey,
-                indicatorColor: Colors.black,
-                indicatorWeight: 3,
-                labelStyle: TextStyle(
-                  fontSize: 16,
-                  fontWeight: FontWeight.w600,
-                ),
-                tabs: [
-                  Tab(text: 'Accounts'),
-                  Tab(text: 'Budgets & Goals'),
-                ],
-              ),
+        elevation: 0,
+        centerTitle: false,
+        title: const Padding(
+          padding: EdgeInsets.only(left: 8.0),
+          child: Text(
+            'Finances',
+            style: TextStyle(
+              fontSize: 34,
+              fontWeight: FontWeight.bold,
+              color: Colors.black,
+              letterSpacing: -1.0,
             ),
           ),
         ),
-        body: TabBarView(children: [_buildAccountsTab(), _buildBudgetsTab()]),
-        floatingActionButton: FloatingActionButton(
-          onPressed: () async {
-            final result = await Navigator.push(
-              context,
-              MaterialPageRoute(
-                builder: (context) => const AddTransactionScreen(),
+        bottom: PreferredSize(
+          preferredSize: const Size.fromHeight(48),
+          child: Container(
+            decoration: BoxDecoration(
+              border: Border(
+                bottom: BorderSide(
+                  color: Colors.grey.withOpacity(0.2),
+                  width: 1,
+                ),
               ),
-            );
-            
-            if (result == true) {
-              _refreshAccounts();
-            }
-          },
-          backgroundColor: Colors.black,
-          child: const Icon(Icons.add, color: Colors.white),
+            ),
+            child: TabBar(
+              controller: _tabController,
+              labelColor: Colors.black,
+              unselectedLabelColor: Colors.grey,
+              indicatorColor: Colors.black,
+              indicatorWeight: 3,
+              labelStyle: const TextStyle(
+                fontSize: 16,
+                fontWeight: FontWeight.w600,
+              ),
+              tabs: const [
+                Tab(text: 'Accounts'),
+                Tab(text: 'Budgets & Goals'),
+              ],
+            ),
+          ),
         ),
       ),
+      body: TabBarView(
+        controller: _tabController,
+        children: [_buildAccountsTab(), _buildBudgetsTab()],
+      ),
+      floatingActionButton: _tabController.index == 0
+          ? FloatingActionButton(
+              onPressed: () async {
+                final result = await Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) => const AddTransactionScreen(),
+                  ),
+                );
+
+                if (result == true) {
+                  _refreshAccounts();
+                }
+              },
+              backgroundColor: Colors.black,
+              child: const Icon(Icons.add, color: Colors.white),
+            )
+          : SpeedDial(
+              icon: Icons.add,
+              activeIcon: Icons.close,
+              backgroundColor: Colors.black,
+              foregroundColor: Colors.white,
+              activeBackgroundColor: Colors.black,
+              activeForegroundColor: Colors.white,
+              children: [
+                SpeedDialChild(
+                  child: const Icon(Icons.savings),
+                  backgroundColor: Colors.black,
+                  foregroundColor: Colors.white,
+                  label: 'Add Budget',
+                  onTap: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) => const AddBudgetScreen(),
+                      ),
+                    );
+                  },
+                ),
+                SpeedDialChild(
+                  child: const Icon(Icons.flag),
+                  backgroundColor: Colors.black,
+                  foregroundColor: Colors.white,
+                  label: 'Add Goal',
+                  onTap: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) => const AddGoalScreen(),
+                      ),
+                    );
+                  },
+                ),
+              ],
+            ),
     );
   }
 
