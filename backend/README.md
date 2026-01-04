@@ -26,7 +26,7 @@ Returns aggregated dashboard data for the homepage.
 **Response:**
 ```json
 {
-  "user": { "name": "Alex", "greeting": "Good Morning" },
+  "user": { "name": "Reuben", "greeting": "Good Morning" },
   "finance": {
     "totalAssets": 1450200,
     "currency": "INR",

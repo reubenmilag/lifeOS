@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:forui/forui.dart';
 import 'screens/home_screen.dart';
 import 'screens/finances_screen.dart';
+import 'screens/health_screen.dart';
 
 void main() {
   runApp(const LifeOSApp());
@@ -49,11 +50,15 @@ class _MainTabScaffoldState extends State<MainTabScaffold> {
           ),
           FBottomNavigationBarItem(
             icon: FIcon(FAssets.icons.banknote),
-            label: const Text('Finances'),
+            label: const Text('Finance'),
           ),
           FBottomNavigationBarItem(
             icon: FIcon(FAssets.icons.calendar),
             label: const Text('Planner'),
+          ),
+          FBottomNavigationBarItem(
+            icon: FIcon(FAssets.icons.activity),
+            label: const Text('Health'),
           ),
           FBottomNavigationBarItem(
             icon: FIcon(FAssets.icons.ellipsis),
@@ -73,6 +78,8 @@ class _MainTabScaffoldState extends State<MainTabScaffold> {
       case 2:
         return const Center(child: Text('Planner'));
       case 3:
+        return const HealthScreen();
+      case 4:
         return const Center(child: Text('More'));
       default:
         return const HomeScreen();

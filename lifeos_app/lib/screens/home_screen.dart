@@ -4,6 +4,7 @@ import '../models/dashboard_model.dart';
 import '../services/api_service.dart';
 import '../widgets/currency_converter_sheet.dart';
 import 'finances_screen.dart';
+import 'profile_settings_screen.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -42,6 +43,17 @@ class _HomeScreenState extends State<HomeScreen> {
     }
   }
 
+  String _getGreeting() {
+    final hour = DateTime.now().hour;
+    if (hour < 12) {
+      return 'Good Morning';
+    } else if (hour < 17) {
+      return 'Good Afternoon';
+    } else {
+      return 'Good Evening';
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return FutureBuilder<DashboardData>(
@@ -56,21 +68,23 @@ class _HomeScreenState extends State<HomeScreen> {
         }
 
         final data = snapshot.data!;
-        return SingleChildScrollView(
-          padding: const EdgeInsets.fromLTRB(20.0, 20.0, 20.0, 100.0),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              _buildHeader(data.user),
-              const SizedBox(height: 24),
-              _buildFinanceSection(data.finance),
-              const SizedBox(height: 24),
-              _buildFocusSection(data.focus),
-              const SizedBox(height: 24),
-              _buildHealthSection(data.health),
-              const SizedBox(height: 24),
-              _buildToolsSection(),
-            ],
+        return SafeArea(
+          child: SingleChildScrollView(
+            padding: const EdgeInsets.fromLTRB(16.0, 8.0, 16.0, 50.0),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                _buildHeader(data.user),
+                const SizedBox(height: 24),
+                _buildFinanceSection(data.finance),
+                const SizedBox(height: 24),
+                _buildFocusSection(data.focus),
+                const SizedBox(height: 24),
+                _buildHealthSection(data.health),
+                const SizedBox(height: 24),
+                _buildToolsSection(),
+              ],
+            ),
           ),
         );
       },
@@ -85,14 +99,14 @@ class _HomeScreenState extends State<HomeScreen> {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(
-              user.greeting,
+              _getGreeting(),
               style: const TextStyle(
                 fontSize: 16,
                 color: Color(0xFF8E8E93),
                 fontWeight: FontWeight.w500,
               ),
             ),
-            const SizedBox(height: 4),
+            const SizedBox(height: 0),
             Text(
               user.name,
               style: const TextStyle(
@@ -102,9 +116,17 @@ class _HomeScreenState extends State<HomeScreen> {
             ),
           ],
         ),
-        FAvatar(
-          fallback: const Text('A'),
-          image: const NetworkImage('https://i.pravatar.cc/150?img=12'),
+        GestureDetector(
+          onTap: () {
+            Navigator.push(
+              context,
+              MaterialPageRoute(builder: (context) => const ProfileSettingsScreen()),
+            );
+          },
+          child: FAvatar(
+            fallback: const Text('A'),
+            image: const NetworkImage('https://i.pravatar.cc/150?img=12'),
+          ),
         ),
       ],
     );

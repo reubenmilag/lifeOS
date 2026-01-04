@@ -8,7 +8,7 @@ export const getDashboardData = async (request, reply) => {
     // Hardcoded dummy data for the homepage dashboard
     const dashboardData = {
       user: {
-        name: "Alex",
+        name: "Reuben",
         greeting: "Good Morning"
       },
       finance: {
