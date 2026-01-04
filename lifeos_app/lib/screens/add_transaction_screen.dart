@@ -6,6 +6,7 @@ import '../models/category_model.dart';
 import '../models/transaction_model.dart';
 import '../services/api_service.dart';
 import '../utils/currency_input_formatter.dart';
+import '../widgets/hierarchical_category_selector.dart';
 
 class AddTransactionScreen extends StatefulWidget {
   final TransactionModel? transaction;
@@ -53,6 +54,17 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> {
     // Account and Category selection will be handled in _loadData after fetching lists
   }
 
+  /// Find a category by ID in the hierarchical structure
+  Category? _findCategoryById(String id) {
+    for (final parent in _categories) {
+      if (parent.id == id) return parent;
+      for (final child in parent.children) {
+        if (child.id == id) return child;
+      }
+    }
+    return null;
+  }
+
   Future<void> _loadData() async {
     try {
       final accounts = await _apiService.getAccounts();
@@ -71,7 +83,7 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> {
                 _selectedToAccount = _accounts.firstWhere((a) => a.id == widget.transaction!.toAccountId);
               }
               if (widget.transaction!.categoryId != null) {
-                _selectedCategory = _categories.firstWhere((c) => c.id == widget.transaction!.categoryId);
+                _selectedCategory = _findCategoryById(widget.transaction!.categoryId!);
               }
             } catch (e) {
               debugPrint('Error matching transaction data: $e');
@@ -471,38 +483,170 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> {
   }
 
   Widget _buildCategoryDropdown() {
-    // Filter categories based on type (income/expense)
-    final filteredCategories = _categories.where((c) => c.type == _selectedType).toList();
-
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 12),
-      decoration: BoxDecoration(
-        border: Border.all(color: Colors.grey.shade300),
-        borderRadius: BorderRadius.circular(8),
-      ),
-      child: DropdownButtonHideUnderline(
-        child: DropdownButton<Category>(
-          value: _selectedCategory != null && _selectedCategory!.type == _selectedType 
-              ? _selectedCategory 
-              : null,
-          isExpanded: true,
-          hint: const Text('Select Category'),
-          items: filteredCategories.map((category) {
-            return DropdownMenuItem(
-              value: category,
-              child: Row(
-                children: [
-                  // We could use an Icon here if we map the icon string to IconData
-                  // For now just text
-                  Text(category.name),
-                ],
+    return InkWell(
+      onTap: () async {
+        final result = await showCategorySelector(
+          context: context,
+          categories: _categories,
+          mode: CategorySelectionMode.single,
+          filterType: _selectedType,
+          initialSingleSelectedId: _selectedCategory?.id,
+          title: 'Select Category',
+        );
+        if (result != null && result.selectedCategories.isNotEmpty) {
+          setState(() {
+            _selectedCategory = result.selectedCategories.first;
+          });
+        }
+      },
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 14),
+        decoration: BoxDecoration(
+          border: Border.all(color: Colors.grey.shade300),
+          borderRadius: BorderRadius.circular(8),
+        ),
+        child: Row(
+          children: [
+            if (_selectedCategory != null) ...[
+              Container(
+                width: 32,
+                height: 32,
+                decoration: BoxDecoration(
+                  color: _parseColor(_selectedCategory!.color).withOpacity(0.15),
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: Icon(
+                  _getIconData(_selectedCategory!.icon),
+                  color: _parseColor(_selectedCategory!.color),
+                  size: 18,
+                ),
               ),
-            );
-          }).toList(),
-          onChanged: (value) => setState(() => _selectedCategory = value),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Text(
+                  _selectedCategory!.name,
+                  style: const TextStyle(fontSize: 16),
+                ),
+              ),
+            ] else ...[
+              Expanded(
+                child: Text(
+                  'Select Category',
+                  style: TextStyle(
+                    fontSize: 16,
+                    color: Colors.grey.shade600,
+                  ),
+                ),
+              ),
+            ],
+            Icon(Icons.chevron_right, color: Colors.grey.shade400),
+          ],
         ),
       ),
     );
+  }
+
+  IconData _getIconData(String iconName) {
+    const iconMap = {
+      'restaurant': Icons.restaurant,
+      'restaurant_menu': Icons.restaurant_menu,
+      'local_bar': Icons.local_bar,
+      'local_cafe': Icons.local_cafe,
+      'shopping_cart': Icons.shopping_cart,
+      'fastfood': Icons.fastfood,
+      'shopping_bag': Icons.shopping_bag,
+      'checkroom': Icons.checkroom,
+      'hiking': Icons.hiking,
+      'local_pharmacy': Icons.local_pharmacy,
+      'devices': Icons.devices,
+      'sports_esports': Icons.sports_esports,
+      'card_giftcard': Icons.card_giftcard,
+      'celebration': Icons.celebration,
+      'favorite': Icons.favorite,
+      'spa': Icons.spa,
+      'home': Icons.home,
+      'yard': Icons.yard,
+      'diamond': Icons.diamond,
+      'child_care': Icons.child_care,
+      'pets': Icons.pets,
+      'construction': Icons.construction,
+      'bolt': Icons.bolt,
+      'build': Icons.build,
+      'account_balance': Icons.account_balance,
+      'security': Icons.security,
+      'key': Icons.key,
+      'cleaning_services': Icons.cleaning_services,
+      'directions_bus': Icons.directions_bus,
+      'business_center': Icons.business_center,
+      'flight': Icons.flight,
+      'train': Icons.train,
+      'local_taxi': Icons.local_taxi,
+      'directions_car': Icons.directions_car,
+      'local_gas_station': Icons.local_gas_station,
+      'assignment': Icons.assignment,
+      'local_parking': Icons.local_parking,
+      'car_rental': Icons.car_rental,
+      'verified_user': Icons.verified_user,
+      'car_repair': Icons.car_repair,
+      'theater_comedy': Icons.theater_comedy,
+      'fitness_center': Icons.fitness_center,
+      'smoking_rooms': Icons.smoking_rooms,
+      'library_books': Icons.library_books,
+      'volunteer_activism': Icons.volunteer_activism,
+      'stadium': Icons.stadium,
+      'school': Icons.school,
+      'psychology': Icons.psychology,
+      'medical_services': Icons.medical_services,
+      'brush': Icons.brush,
+      'luggage': Icons.luggage,
+      'cake': Icons.cake,
+      'casino': Icons.casino,
+      'live_tv': Icons.live_tv,
+      'self_improvement': Icons.self_improvement,
+      'computer': Icons.computer,
+      'wifi': Icons.wifi,
+      'phone_android': Icons.phone_android,
+      'mail': Icons.mail,
+      'apps': Icons.apps,
+      'support_agent': Icons.support_agent,
+      'receipt_long': Icons.receipt_long,
+      'family_restroom': Icons.family_restroom,
+      'gavel': Icons.gavel,
+      'health_and_safety': Icons.health_and_safety,
+      'money_off': Icons.money_off,
+      'receipt': Icons.receipt,
+      'trending_up': Icons.trending_up,
+      'collections': Icons.collections,
+      'insert_chart': Icons.insert_chart,
+      'real_estate_agent': Icons.real_estate_agent,
+      'savings': Icons.savings,
+      'currency_bitcoin': Icons.currency_bitcoin,
+      'pie_chart': Icons.pie_chart,
+      'show_chart': Icons.show_chart,
+      'business': Icons.business,
+      'inventory_2': Icons.inventory_2,
+      'groups': Icons.groups,
+      'hotel': Icons.hotel,
+      'engineering': Icons.engineering,
+      'workspace_premium': Icons.workspace_premium,
+      'child_friendly': Icons.child_friendly,
+      'elderly': Icons.elderly,
+      'subscriptions': Icons.subscriptions,
+      'music_note': Icons.music_note,
+      'movie': Icons.movie,
+      'cloud': Icons.cloud,
+      'build_circle': Icons.build_circle,
+      'warning': Icons.warning,
+      'emergency': Icons.emergency,
+      'local_hospital': Icons.local_hospital,
+      'home_repair_service': Icons.home_repair_service,
+      'more_horiz': Icons.more_horiz,
+      'help_outline': Icons.help_outline,
+      'attach_money': Icons.attach_money,
+      'payments': Icons.payments,
+      'work': Icons.work,
+    };
+    return iconMap[iconName] ?? Icons.category;
   }
 
   Color _parseColor(String hexColor) {

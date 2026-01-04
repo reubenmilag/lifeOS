@@ -58,9 +58,10 @@ class _BudgetDetailScreenState extends State<BudgetDetailScreen>
     }
 
     try {
+      // Fetch transactions for the first category (or all if none specified)
+      // We'll filter client-side for multiple categories
       final result = await _apiService.getTransactionsPaginated(
         limit: 100, // Fetch enough for the detail view
-        categoryId: widget.budget.categoryId,
         accountId: widget.budget.accountId,
         startDate: startDate,
         endDate: endDate,
@@ -70,12 +71,15 @@ class _BudgetDetailScreenState extends State<BudgetDetailScreen>
       final allTransactions = result['data'] as List<TransactionModel>;
 
       // Client-side filtering to ensure strict adherence to budget constraints
-      // This acts as a safeguard in case the API returns broader results
+      // This handles multiple category filtering
       final filteredTransactions = allTransactions.where((t) {
-        if (widget.budget.categoryId != null &&
-            widget.budget.categoryId!.isNotEmpty) {
-          if (t.categoryId != widget.budget.categoryId) return false;
+        // Filter by categories if any are specified
+        if (widget.budget.categoryIds.isNotEmpty) {
+          if (t.categoryId == null || !widget.budget.categoryIds.contains(t.categoryId)) {
+            return false;
+          }
         }
+        // Filter by account if specified
         if (widget.budget.accountId != null &&
             widget.budget.accountId!.isNotEmpty) {
           if (t.accountId != widget.budget.accountId) return false;

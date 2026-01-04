@@ -32,8 +32,9 @@ const calculateSpent = async (budget) => {
     date: { $gte: startDate, $lte: endDate }
   };
 
-  if (budget.category) {
-    query.categoryId = budget.category;
+  // Support multiple categories
+  if (budget.categories && budget.categories.length > 0) {
+    query.categoryId = { $in: budget.categories };
   }
   
   if (budget.account) {
@@ -54,9 +55,6 @@ export const getBudgets = async (request, reply) => {
     
     if (budgets.length === 0) {
       const sampleBudgets = [
-        { name: "Groceries", spent: 0, limit: 600, color: "#FFA500", icon: "shoppingCart" },
-        { name: "Transport", spent: 0, limit: 200, color: "#2196F3", icon: "bus" },
-        { name: "Entertainment", spent: 0, limit: 300, color: "#F44336", icon: "popcorn" }
       ];
       
       await Budget.insertMany(sampleBudgets);

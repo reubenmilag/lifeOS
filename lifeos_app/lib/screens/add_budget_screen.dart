@@ -3,6 +3,7 @@ import 'package:lifeos_app/models/account_model.dart';
 import 'package:lifeos_app/models/budget_model.dart';
 import 'package:lifeos_app/models/category_model.dart';
 import 'package:lifeos_app/services/api_service.dart';
+import 'package:lifeos_app/widgets/hierarchical_category_selector.dart';
 import 'package:intl/intl.dart';
 
 class AddBudgetScreen extends StatefulWidget {
@@ -23,7 +24,8 @@ class _AddBudgetScreenState extends State<AddBudgetScreen> {
   DateTime? _startDate;
   DateTime? _endDate;
   double _amount = 0;
-  String? _selectedCategoryId;
+  List<String> _selectedCategoryIds = [];
+  List<Category> _selectedCategories = [];
   String? _selectedAccountId;
 
   // Default color and icon
@@ -43,7 +45,7 @@ class _AddBudgetScreenState extends State<AddBudgetScreen> {
       _startDate = widget.budget!.startDate;
       _endDate = widget.budget!.endDate;
       _amount = widget.budget!.limit;
-      _selectedCategoryId = widget.budget!.categoryId;
+      _selectedCategoryIds = List.from(widget.budget!.categoryIds);
       _selectedAccountId = widget.budget!.accountId;
       _color = widget.budget!.color;
       _icon = widget.budget!.icon;
@@ -59,6 +61,14 @@ class _AddBudgetScreenState extends State<AddBudgetScreen> {
         _categories = categories;
         _accounts = accounts;
         _isLoading = false;
+        
+        // Find selected categories for editing mode
+        if (_selectedCategoryIds.isNotEmpty) {
+          _selectedCategories = _selectedCategoryIds
+              .map((id) => _findCategoryById(id))
+              .whereType<Category>()
+              .toList();
+        }
       });
     } catch (e) {
       // Handle error
@@ -66,6 +76,16 @@ class _AddBudgetScreenState extends State<AddBudgetScreen> {
         _isLoading = false;
       });
     }
+  }
+
+  Category? _findCategoryById(String id) {
+    for (final parent in _categories) {
+      if (parent.id == id) return parent;
+      for (final child in parent.children) {
+        if (child.id == id) return child;
+      }
+    }
+    return null;
   }
 
   Future<void> _selectDate(BuildContext context, bool isStart) async {
@@ -98,12 +118,17 @@ class _AddBudgetScreenState extends State<AddBudgetScreen> {
         return;
       }
 
-      // If category is selected, use its color and icon
-      if (_selectedCategoryId != null) {
-        final category =
-            _categories.firstWhere((c) => c.id == _selectedCategoryId);
-        _color = category.color;
-        _icon = category.icon;
+      if (_selectedCategoryIds.isEmpty) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Please select at least one category')),
+        );
+        return;
+      }
+
+      // Use first selected category's color and icon for the budget
+      if (_selectedCategories.isNotEmpty) {
+        _color = _selectedCategories.first.color;
+        _icon = _selectedCategories.first.icon;
       }
 
       final newBudget = Budget(
@@ -116,7 +141,7 @@ class _AddBudgetScreenState extends State<AddBudgetScreen> {
         period: _period,
         startDate: _startDate,
         endDate: _endDate,
-        categoryId: _selectedCategoryId,
+        categoryIds: _selectedCategoryIds,
         accountId: _selectedAccountId,
       );
 
@@ -294,23 +319,7 @@ class _AddBudgetScreenState extends State<AddBudgetScreen> {
                     ),
                     const SizedBox(height: 24),
                     _buildLabel('Category'),
-                    DropdownButtonFormField<String?>(
-                      value: _selectedCategoryId,
-                      decoration: _inputDecoration('Select Category'),
-                      items: _categories.map((category) {
-                        return DropdownMenuItem<String?>(
-                          value: category.id,
-                          child: Text(category.name),
-                        );
-                      }).toList(),
-                      onChanged: (value) {
-                        setState(() {
-                          _selectedCategoryId = value;
-                        });
-                      },
-                      validator: (value) =>
-                          value == null ? 'Please select a category' : null,
-                    ),
+                    _buildCategorySelector(),
                     const SizedBox(height: 24),
                     _buildLabel('Account (Optional)'),
                     DropdownButtonFormField<String?>(
@@ -376,6 +385,113 @@ class _AddBudgetScreenState extends State<AddBudgetScreen> {
         ),
       ),
     );
+  }
+
+  Widget _buildCategorySelector() {
+    return InkWell(
+      onTap: () async {
+        final result = await showCategorySelector(
+          context: context,
+          categories: _categories,
+          mode: CategorySelectionMode.multi,
+          filterType: 'expense', // Budgets are typically for expenses
+          initialSelectedIds: _selectedCategoryIds,
+          title: 'Select Categories',
+        );
+        if (result != null) {
+          setState(() {
+            _selectedCategories = result.selectedCategories;
+            _selectedCategoryIds = result.selectedIds;
+          });
+        }
+      },
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+        decoration: BoxDecoration(
+          color: Colors.grey[50],
+          borderRadius: BorderRadius.circular(12),
+        ),
+        child: Row(
+          children: [
+            if (_selectedCategories.isNotEmpty) ...[
+              Container(
+                width: 36,
+                height: 36,
+                decoration: BoxDecoration(
+                  color: _parseColor(_selectedCategories.first.color).withOpacity(0.15),
+                  borderRadius: BorderRadius.circular(10),
+                ),
+                child: _selectedCategories.length > 1
+                    ? Center(
+                        child: Text(
+                          '${_selectedCategories.length}',
+                          style: TextStyle(
+                            fontWeight: FontWeight.bold,
+                            color: _parseColor(_selectedCategories.first.color),
+                          ),
+                        ),
+                      )
+                    : Icon(
+                        _getIconData(_selectedCategories.first.icon),
+                        color: _parseColor(_selectedCategories.first.color),
+                        size: 20,
+                      ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Text(
+                  _selectedCategories.length == 1
+                      ? _selectedCategories.first.name
+                      : '${_selectedCategories.length} categories selected',
+                  style: const TextStyle(fontSize: 16),
+                  overflow: TextOverflow.ellipsis,
+                ),
+              ),
+            ] else ...[
+              Expanded(
+                child: Text(
+                  'Select Categories',
+                  style: TextStyle(
+                    fontSize: 16,
+                    color: Colors.grey.shade600,
+                  ),
+                ),
+              ),
+            ],
+            Icon(Icons.chevron_right, color: Colors.grey.shade400),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Color _parseColor(String hexColor) {
+    hexColor = hexColor.replaceAll('#', '');
+    if (hexColor.length == 6) {
+      hexColor = 'FF$hexColor';
+    }
+    return Color(int.parse('0x$hexColor'));
+  }
+
+  IconData _getIconData(String iconName) {
+    const iconMap = {
+      'restaurant': Icons.restaurant,
+      'shopping_bag': Icons.shopping_bag,
+      'home': Icons.home,
+      'directions_bus': Icons.directions_bus,
+      'directions_car': Icons.directions_car,
+      'theater_comedy': Icons.theater_comedy,
+      'computer': Icons.computer,
+      'account_balance': Icons.account_balance,
+      'trending_up': Icons.trending_up,
+      'business': Icons.business,
+      'family_restroom': Icons.family_restroom,
+      'subscriptions': Icons.subscriptions,
+      'warning': Icons.warning,
+      'more_horiz': Icons.more_horiz,
+      'attach_money': Icons.attach_money,
+    };
+    return iconMap[iconName] ?? Icons.category;
   }
 
   InputDecoration _inputDecoration(String hint, {String? prefixText}) {

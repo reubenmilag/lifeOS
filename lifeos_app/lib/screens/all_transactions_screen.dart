@@ -7,6 +7,7 @@ import 'package:lifeos_app/models/transaction_model.dart';
 import 'package:lifeos_app/screens/add_transaction_screen.dart';
 import 'package:lifeos_app/services/api_service.dart';
 import 'package:lifeos_app/utils/formatters.dart';
+import 'package:lifeos_app/widgets/hierarchical_category_selector.dart';
 
 class AllTransactionsScreen extends StatefulWidget {
   const AllTransactionsScreen({super.key});
@@ -34,6 +35,7 @@ class _AllTransactionsScreenState extends State<AllTransactionsScreen> {
   // Filters
   String? _selectedType;
   String? _selectedCategoryId;
+  Category? _selectedFilterCategory;
   String? _selectedAccountId;
   DateTime? _startDate;
   DateTime? _endDate;
@@ -583,23 +585,7 @@ class _AllTransactionsScreenState extends State<AllTransactionsScreen> {
                   const SizedBox(height: 16),
                   const Text('Category', style: TextStyle(fontWeight: FontWeight.w600)),
                   const SizedBox(height: 8),
-                  DropdownButtonFormField<String>(
-                    value: _selectedCategoryId,
-                    decoration: const InputDecoration(
-                      border: OutlineInputBorder(),
-                      contentPadding: EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-                    ),
-                    items: [
-                      const DropdownMenuItem(value: null, child: Text('All Categories')),
-                      ..._categories.map((c) => DropdownMenuItem(
-                            value: c.id,
-                            child: Text(c.name),
-                          )),
-                    ],
-                    onChanged: (value) {
-                      setModalState(() => _selectedCategoryId = value);
-                    },
-                  ),
+                  _buildCategoryFilterButton(setModalState),
                   const SizedBox(height: 16),
                   const Text('Account', style: TextStyle(fontWeight: FontWeight.w600)),
                   const SizedBox(height: 8),
@@ -646,6 +632,60 @@ class _AllTransactionsScreenState extends State<AllTransactionsScreen> {
           },
         );
       },
+    );
+  }
+
+  Widget _buildCategoryFilterButton(StateSetter setModalState) {
+    return InkWell(
+      onTap: () async {
+        final result = await showCategorySelector(
+          context: context,
+          categories: _categories,
+          mode: CategorySelectionMode.single,
+          initialSingleSelectedId: _selectedCategoryId,
+          title: 'Select Category',
+        );
+        if (result != null && result.selectedCategories.isNotEmpty) {
+          setModalState(() {
+            _selectedFilterCategory = result.selectedCategories.first;
+            _selectedCategoryId = _selectedFilterCategory!.id;
+          });
+        }
+      },
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 14),
+        decoration: BoxDecoration(
+          border: Border.all(color: Colors.grey.shade400),
+          borderRadius: BorderRadius.circular(4),
+        ),
+        child: Row(
+          children: [
+            Expanded(
+              child: Text(
+                _selectedFilterCategory?.name ?? 'All Categories',
+                style: TextStyle(
+                  fontSize: 16,
+                  color: _selectedFilterCategory != null 
+                      ? Colors.black 
+                      : Colors.grey.shade600,
+                ),
+              ),
+            ),
+            if (_selectedCategoryId != null)
+              GestureDetector(
+                onTap: () {
+                  setModalState(() {
+                    _selectedCategoryId = null;
+                    _selectedFilterCategory = null;
+                  });
+                },
+                child: Icon(Icons.clear, size: 20, color: Colors.grey.shade600),
+              )
+            else
+              Icon(Icons.chevron_right, color: Colors.grey.shade400),
+          ],
+        ),
+      ),
     );
   }
 }

@@ -5,6 +5,7 @@ import 'package:lifeos_app/services/api_service.dart';
 import 'package:lifeos_app/models/account_model.dart';
 import 'package:lifeos_app/models/budget_model.dart';
 import 'package:lifeos_app/models/goal_model.dart';
+import 'package:lifeos_app/models/category_model.dart';
 import 'package:lifeos_app/models/transaction_model.dart';
 import 'package:lifeos_app/screens/add_transaction_screen.dart';
 import 'package:lifeos_app/screens/add_budget_screen.dart';
@@ -30,6 +31,7 @@ class _FinancesScreenState extends State<FinancesScreen> with SingleTickerProvid
   late Future<List<Budget>> _budgetsFuture;
   late Future<List<Goal>> _goalsFuture;
   late Future<List<TransactionModel>> _transactionsFuture;
+  late Future<List<Category>> _categoriesFuture;
   late TabController _tabController;
 
   @override
@@ -54,6 +56,7 @@ class _FinancesScreenState extends State<FinancesScreen> with SingleTickerProvid
       _transactionsFuture = _apiService.getTransactions();
       _budgetsFuture = _apiService.getBudgets();
       _goalsFuture = _apiService.getGoals();
+      _categoriesFuture = _apiService.getCategories();
     });
   }
 
@@ -255,8 +258,8 @@ class _FinancesScreenState extends State<FinancesScreen> with SingleTickerProvid
     return ListView(
       padding: const EdgeInsets.all(20),
       children: [
-        FutureBuilder<List<TransactionModel>>(
-          future: _transactionsFuture,
+        FutureBuilder<List<dynamic>>(
+          future: Future.wait([_transactionsFuture, _categoriesFuture]),
           builder: (context, snapshot) {
             if (snapshot.connectionState == ConnectionState.waiting) {
               return const SizedBox(
@@ -266,7 +269,9 @@ class _FinancesScreenState extends State<FinancesScreen> with SingleTickerProvid
             } else if (snapshot.hasError) {
               return Text('Error loading expenses: ${snapshot.error}');
             } else {
-              return _buildExpensesStructure(snapshot.data ?? []);
+              final transactions = snapshot.data![0] as List<TransactionModel>;
+              final categories = snapshot.data![1] as List<Category>;
+              return _buildExpensesStructure(transactions, categories);
             }
           },
         ),
@@ -341,7 +346,7 @@ class _FinancesScreenState extends State<FinancesScreen> with SingleTickerProvid
     );
   }
 
-  Widget _buildExpensesStructure(List<TransactionModel> transactions) {
+  Widget _buildExpensesStructure(List<TransactionModel> transactions, List<Category> categories) {
     final now = DateTime.now();
     final currentMonthStart = DateTime(now.year, now.month, 1);
     final currentYearStart = DateTime(now.year, 1, 1);
@@ -368,39 +373,62 @@ class _FinancesScreenState extends State<FinancesScreen> with SingleTickerProvid
     final daysInMonth = now.difference(currentMonthStart).inDays + 1;
     final daysInYear = now.difference(currentYearStart).inDays + 1;
 
-    // Helper to group by category
-    Map<String, double> groupByCategory(List<TransactionModel> txns) {
+    // Build a map from category ID to parent category (for subcategories)
+    final Map<String, Category> categoryIdToParent = {};
+    for (var parent in categories) {
+      for (var child in parent.children) {
+        categoryIdToParent[child.id] = parent;
+      }
+    }
+
+    // Helper to group by parent category (combines subcategories under main category)
+    Map<String, double> groupByParentCategory(List<TransactionModel> txns) {
       final map = <String, double>{};
       for (var t in txns) {
-        final catName = t.category?.name ?? 'Uncategorized';
+        if (t.category == null) {
+          map['Uncategorized'] = (map['Uncategorized'] ?? 0) + t.amount;
+          continue;
+        }
+        
+        // Check if this is a subcategory
+        final parentCategory = categoryIdToParent[t.category!.id];
+        final catName = parentCategory?.name ?? t.category!.name;
         map[catName] = (map[catName] ?? 0) + t.amount;
       }
       return map;
     }
 
-    // Helper to get color map
-    Map<String, Color> getCategoryColors(List<TransactionModel> txns) {
+    // Helper to get color map for parent categories
+    Map<String, Color> getParentCategoryColors(List<TransactionModel> txns) {
       final map = <String, Color>{};
       for (var t in txns) {
-        final catName = t.category?.name ?? 'Uncategorized';
+        if (t.category == null) {
+          map['Uncategorized'] = Colors.grey;
+          continue;
+        }
+        
+        // Check if this is a subcategory
+        final parentCategory = categoryIdToParent[t.category!.id];
+        final catName = parentCategory?.name ?? t.category!.name;
         if (!map.containsKey(catName)) {
-          map[catName] = t.category != null
-              ? _parseColor(t.category!.color)
-              : Colors.grey;
+          // Use parent category color if it's a subcategory
+          map[catName] = parentCategory != null
+              ? _parseColor(parentCategory.color)
+              : _parseColor(t.category!.color);
         }
       }
       return map;
     }
 
-    final monthlyBreakdown = groupByCategory(monthlyExpenses);
-    final yearlyBreakdown = groupByCategory(yearlyExpenses);
+    final monthlyBreakdown = groupByParentCategory(monthlyExpenses);
+    final yearlyBreakdown = groupByParentCategory(yearlyExpenses);
 
     // Combine all categories for legend
     final allCategories = {
       ...monthlyBreakdown.keys,
       ...yearlyBreakdown.keys
     }.toList();
-    final categoryColors = getCategoryColors(
+    final categoryColors = getParentCategoryColors(
         expenseTransactions); // Get colors from all expenses to be safe
 
     return Column(

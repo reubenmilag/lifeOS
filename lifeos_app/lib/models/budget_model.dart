@@ -8,8 +8,11 @@ class Budget {
   final String period;
   final DateTime? startDate;
   final DateTime? endDate;
-  final String? categoryId;
+  final List<String> categoryIds;
   final String? accountId;
+
+  // Legacy single category support (for backwards compatibility)
+  String? get categoryId => categoryIds.isNotEmpty ? categoryIds.first : null;
 
   Budget({
     this.id,
@@ -21,11 +24,30 @@ class Budget {
     this.period = 'Month',
     this.startDate,
     this.endDate,
-    this.categoryId,
+    List<String>? categoryIds,
+    String? categoryId, // Legacy support
     this.accountId,
-  });
+  }) : categoryIds = categoryIds ?? (categoryId != null ? [categoryId] : []);
 
   factory Budget.fromJson(Map<String, dynamic> json) {
+    // Handle both 'categories' array and legacy 'category' single field
+    List<String> categoryIds = [];
+    
+    if (json['categories'] != null) {
+      categoryIds = (json['categories'] as List).map((c) {
+        if (c is Map) return c['_id']?.toString() ?? '';
+        return c?.toString() ?? '';
+      }).where((id) => id.isNotEmpty).toList();
+    } else if (json['category'] != null) {
+      // Legacy single category support
+      final catId = json['category'] is Map
+          ? json['category']['_id']?.toString()
+          : json['category']?.toString();
+      if (catId != null && catId.isNotEmpty) {
+        categoryIds = [catId];
+      }
+    }
+
     return Budget(
       id: json['id']?.toString() ?? json['_id']?.toString(),
       name: json['name'],
@@ -37,9 +59,7 @@ class Budget {
       startDate:
           json['startDate'] != null ? DateTime.parse(json['startDate']) : null,
       endDate: json['endDate'] != null ? DateTime.parse(json['endDate']) : null,
-      categoryId: json['category'] is Map
-          ? json['category']['_id']
-          : json['category']?.toString(),
+      categoryIds: categoryIds,
       accountId: json['account'] is Map
           ? json['account']['_id']
           : json['account']?.toString(),
@@ -57,7 +77,7 @@ class Budget {
       'period': period,
       if (startDate != null) 'startDate': startDate!.toIso8601String(),
       if (endDate != null) 'endDate': endDate!.toIso8601String(),
-      if (categoryId != null) 'category': categoryId,
+      if (categoryIds.isNotEmpty) 'categories': categoryIds,
       if (accountId != null) 'account': accountId,
     };
   }

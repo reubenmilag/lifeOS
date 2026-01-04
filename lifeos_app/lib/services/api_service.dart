@@ -14,7 +14,7 @@ class ApiService {
   static const String _ratesKey = 'currency_rates';
 
   ApiService({String? baseUrl})
-      : baseUrl = baseUrl ?? 'http://192.168.0.106:3000', // Updated to localhost for simulator/emulator access, might need 10.0.2.2 for Android
+      : baseUrl = baseUrl ?? 'http://192.168.0.107:3000', // Updated to localhost for simulator/emulator access, might need 10.0.2.2 for Android
         _dio = Dio(BaseOptions(
           connectTimeout: const Duration(seconds: 15),
           receiveTimeout: const Duration(seconds: 15),

@@ -34,10 +34,10 @@ const budgetSchema = new mongoose.Schema({
   endDate: {
     type: Date
   },
-  category: {
+  categories: [{
     type: mongoose.Schema.Types.ObjectId,
     ref: 'Category'
-  },
+  }],
   account: {
     type: mongoose.Schema.Types.ObjectId,
     ref: 'Account'
