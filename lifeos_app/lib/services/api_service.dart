@@ -7,6 +7,7 @@ import '../models/budget_model.dart';
 import '../models/goal_model.dart';
 import '../models/category_model.dart';
 import '../models/transaction_model.dart';
+import '../models/event_model.dart';
 
 class ApiService {
   final Dio _dio;
@@ -14,7 +15,7 @@ class ApiService {
   static const String _ratesKey = 'currency_rates';
 
   ApiService({String? baseUrl})
-      : baseUrl = baseUrl ?? 'http://169.254.195.11:3000', // Updated to localhost for simulator/emulator access, might need 10.0.2.2 for Android
+      : baseUrl = baseUrl ?? 'http://169.254.78.233:3000', // Updated to localhost for simulator/emulator access, might need 10.0.2.2 for Android
         _dio = Dio(BaseOptions(
           connectTimeout: const Duration(seconds: 15),
           receiveTimeout: const Duration(seconds: 15),
@@ -162,6 +163,57 @@ class ApiService {
       await _dio.delete('$baseUrl/api/goals/$id');
     } on DioException catch (e) {
       throw Exception('Failed to delete goal: ${e.message}');
+    }
+  }
+
+  Future<List<PlannerEvent>> getEvents({DateTime? startDate, DateTime? endDate}) async {
+    try {
+      final queryParams = <String, dynamic>{};
+      if (startDate != null && endDate != null) {
+        queryParams['startDate'] = startDate.toUtc().toIso8601String();
+        queryParams['endDate'] = endDate.toUtc().toIso8601String();
+      }
+      
+      final response = await _dio.get(
+        '$baseUrl/api/events',
+        queryParameters: queryParams,
+      );
+      final List<dynamic> data = response.data;
+      return data.map((json) => PlannerEvent.fromJson(json)).toList();
+    } on DioException catch (e) {
+      throw Exception('Failed to load events: ${e.message}');
+    }
+  }
+
+  Future<PlannerEvent> createEvent(PlannerEvent event) async {
+    try {
+      final response = await _dio.post(
+        '$baseUrl/api/events',
+        data: event.toJson(),
+      );
+      return PlannerEvent.fromJson(response.data);
+    } on DioException catch (e) {
+      throw Exception('Failed to create event: ${e.message}');
+    }
+  }
+
+  Future<PlannerEvent> updateEvent(PlannerEvent event) async {
+    try {
+      final response = await _dio.put(
+        '$baseUrl/api/events/${event.id}',
+        data: event.toJson(),
+      );
+      return PlannerEvent.fromJson(response.data);
+    } on DioException catch (e) {
+      throw Exception('Failed to update event: ${e.message}');
+    }
+  }
+
+  Future<void> deleteEvent(String id) async {
+    try {
+      await _dio.delete('$baseUrl/api/events/$id');
+    } on DioException catch (e) {
+      throw Exception('Failed to delete event: ${e.message}');
     }
   }
 

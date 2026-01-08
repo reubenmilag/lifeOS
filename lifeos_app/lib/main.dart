@@ -3,6 +3,7 @@ import 'package:forui/forui.dart';
 import 'screens/home_screen.dart';
 import 'screens/finances_screen.dart';
 import 'screens/health_screen.dart';
+import 'screens/planner_screen.dart';
 
 void main() {
   runApp(const LifeOSApp());
@@ -76,7 +77,7 @@ class _MainTabScaffoldState extends State<MainTabScaffold> {
       case 1:
         return const FinancesScreen();
       case 2:
-        return const Center(child: Text('Planner'));
+        return const PlannerScreen();
       case 3:
         return const HealthScreen();
       case 4:
