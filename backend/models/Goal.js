@@ -17,6 +17,17 @@ const goalSchema = new mongoose.Schema({
   color: {
     type: String,
     default: '#4B0082' // Indigo default
+  },
+  icon: {
+    type: String,
+    default: 'star'
+  },
+  deadline: {
+    type: Date,
+    required: true
+  },
+  note: {
+    type: String
   }
 }, {
   timestamps: true,

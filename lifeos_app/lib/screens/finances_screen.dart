@@ -17,6 +17,8 @@ import 'package:flutter_speed_dial/flutter_speed_dial.dart';
 import 'package:fl_chart/fl_chart.dart';
 
 import 'package:lifeos_app/screens/budget_detail_screen.dart';
+import 'package:lifeos_app/screens/goal_details_screen.dart';
+import 'package:lifeos_app/utils/icon_utils.dart';
 
 class FinancesScreen extends StatefulWidget {
   const FinancesScreen({super.key});
@@ -275,7 +277,7 @@ class _FinancesScreenState extends State<FinancesScreen> with SingleTickerProvid
             }
           },
         ),
-        const SizedBox(height: 24),
+        const SizedBox(height: 50),
         const Text(
           'Monthly Budgets',
           style: TextStyle(
@@ -306,7 +308,7 @@ class _FinancesScreenState extends State<FinancesScreen> with SingleTickerProvid
             }
           },
         ),
-        const SizedBox(height: 24),
+        const SizedBox(height: 50),
         const Text(
           'Savings Goals',
           style: TextStyle(
@@ -330,12 +332,7 @@ class _FinancesScreenState extends State<FinancesScreen> with SingleTickerProvid
                 children: snapshot.data!.map((goal) {
                   return Padding(
                     padding: const EdgeInsets.only(bottom: 16.0),
-                    child: _buildGoalItem(
-                      goal.name,
-                      '${Formatters.formatCurrency(goal.saved)} / ${Formatters.formatCurrency(goal.target)}',
-                      goal.progress,
-                      _parseColor(goal.color),
-                    ),
+                    child: _buildCompactGoalItem(goal),
                   );
                 }).toList(),
               );
@@ -829,56 +826,147 @@ class _FinancesScreenState extends State<FinancesScreen> with SingleTickerProvid
     );
   }
 
-  Widget _buildGoalItem(
-    String name,
-    String amount,
-    double progress,
-    Color color,
-  ) {
-    return FCard(
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+  Widget _buildCompactGoalItem(Goal goal) {
+    final percentage = (goal.saved / goal.target).clamp(0.0, 1.0);
+    final percentageValue = (goal.saved / goal.target) * 100;
+    final goalColor = _parseColor(goal.color);
+    
+    final now = DateTime.now();
+    final daysLeft = goal.deadline.difference(now).inDays;
+    final daysLeftText = daysLeft < 0 ? 'Overdue' : '$daysLeft days left';
+
+    return Container(
+      margin: const EdgeInsets.only(bottom: 0),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(12),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.05),
+            blurRadius: 6,
+            offset: const Offset(0, 4),
+            spreadRadius: -1,
+          )
+        ],
+      ),
+      child: InkWell(
+        onTap: () async {
+          final result = await Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder: (context) => GoalDetailsScreen(goal: goal),
+            ),
+          );
+          if (result == true) {
+            _refreshData();
+          }
+        },
+        borderRadius: BorderRadius.circular(12),
+        child: Padding(
+          padding: const EdgeInsets.all(12.0),
+          child: Column(
             children: [
-              Text(
-                name,
-                style: const TextStyle(
-                  fontWeight: FontWeight.w600,
-                  fontSize: 16,
-                ),
-              ),
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                decoration: BoxDecoration(
-                  color: color.withOpacity(0.1),
-                  borderRadius: BorderRadius.circular(8),
-                ),
-                child: Text(
-                  '${(progress * 100).toInt()}%',
-                  style: TextStyle(
-                    color: color,
-                    fontWeight: FontWeight.bold,
-                    fontSize: 12,
+              Row(
+                children: [
+                  Container(
+                    width: 36,
+                    height: 36,
+                    decoration: BoxDecoration(
+                      color: goalColor.withOpacity(0.1),
+                      shape: BoxShape.circle,
+                    ),
+                    alignment: Alignment.center,
+                    child: Icon(IconUtils.getIcon(goal.icon),
+                        color: goalColor, size: 18),
                   ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          goal.name,
+                          style: const TextStyle(
+                            fontWeight: FontWeight.w600,
+                            fontSize: 15,
+                          ),
+                        ),
+                        const SizedBox(height: 2),
+                        RichText(
+                          text: TextSpan(
+                            style: const TextStyle(color: Colors.black),
+                            children: [
+                              TextSpan(
+                                text: Formatters.formatCurrency(goal.saved),
+                                style: const TextStyle(
+                                  fontWeight: FontWeight.bold,
+                                  fontSize: 13,
+                                ),
+                              ),
+                              TextSpan(
+                                text:
+                                    ' / ${Formatters.formatCurrency(goal.target)}',
+                                style: TextStyle(
+                                  fontWeight: FontWeight.w400,
+                                  fontSize: 11,
+                                  color: Colors.grey[600],
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  Column(
+                    crossAxisAlignment: CrossAxisAlignment.end,
+                    children: [
+                      Text(
+                        '${percentageValue.toStringAsFixed(0)}%',
+                        style: TextStyle(
+                          color: goalColor,
+                          fontSize: 13,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                      const SizedBox(height: 2),
+                      Text(
+                        daysLeftText,
+                        style: TextStyle(
+                          color: Colors.grey[600],
+                          fontSize: 10,
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+              const SizedBox(height: 12),
+              SizedBox(
+                height: 6,
+                child: Stack(
+                  children: [
+                    Container(
+                      decoration: BoxDecoration(
+                        color: const Color(0xFFF3F4F6),
+                        borderRadius: BorderRadius.circular(999),
+                      ),
+                    ),
+                    FractionallySizedBox(
+                      widthFactor: percentage,
+                      child: Container(
+                        decoration: BoxDecoration(
+                          color: goalColor,
+                          borderRadius: BorderRadius.circular(999),
+                        ),
+                      ),
+                    ),
+                  ],
                 ),
               ),
             ],
           ),
-          const SizedBox(height: 8),
-          Text(amount, style: TextStyle(color: Colors.grey[600], fontSize: 14)),
-          const SizedBox(height: 12),
-          ClipRRect(
-            borderRadius: BorderRadius.circular(4),
-            child: LinearProgressIndicator(
-              value: progress,
-              minHeight: 8,
-              backgroundColor: color.withOpacity(0.1),
-              valueColor: AlwaysStoppedAnimation(color),
-            ),
-          ),
-        ],
+        ),
       ),
     );
   }

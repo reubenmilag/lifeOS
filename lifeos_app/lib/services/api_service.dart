@@ -14,7 +14,7 @@ class ApiService {
   static const String _ratesKey = 'currency_rates';
 
   ApiService({String? baseUrl})
-      : baseUrl = baseUrl ?? 'http://192.168.0.107:3000', // Updated to localhost for simulator/emulator access, might need 10.0.2.2 for Android
+      : baseUrl = baseUrl ?? 'http://169.254.195.11:3000', // Updated to localhost for simulator/emulator access, might need 10.0.2.2 for Android
         _dio = Dio(BaseOptions(
           connectTimeout: const Duration(seconds: 15),
           receiveTimeout: const Duration(seconds: 15),
@@ -130,6 +130,38 @@ class ApiService {
       return data.map((json) => Goal.fromJson(json)).toList();
     } on DioException catch (e) {
       throw Exception('Failed to load goals: ${e.message}');
+    }
+  }
+
+  Future<Goal> createGoal(Goal goal) async {
+    try {
+      final response = await _dio.post(
+        '$baseUrl/api/goals',
+        data: goal.toJson(),
+      );
+      return Goal.fromJson(response.data);
+    } on DioException catch (e) {
+      throw Exception('Failed to create goal: ${e.message}');
+    }
+  }
+
+  Future<Goal> updateGoal(Goal goal) async {
+    try {
+      final response = await _dio.put(
+        '$baseUrl/api/goals/${goal.id}',
+        data: goal.toJson(),
+      );
+      return Goal.fromJson(response.data);
+    } on DioException catch (e) {
+      throw Exception('Failed to update goal: ${e.message}');
+    }
+  }
+
+  Future<void> deleteGoal(String id) async {
+    try {
+      await _dio.delete('$baseUrl/api/goals/$id');
+    } on DioException catch (e) {
+      throw Exception('Failed to delete goal: ${e.message}');
     }
   }
 
