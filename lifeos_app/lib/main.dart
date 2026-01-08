@@ -4,6 +4,7 @@ import 'screens/home_screen.dart';
 import 'screens/finances_screen.dart';
 import 'screens/health_screen.dart';
 import 'screens/planner_screen.dart';
+import 'screens/more_screen.dart';
 
 void main() {
   runApp(const LifeOSApp());
@@ -81,7 +82,7 @@ class _MainTabScaffoldState extends State<MainTabScaffold> {
       case 3:
         return const HealthScreen();
       case 4:
-        return const Center(child: Text('More'));
+        return const MoreScreen();
       default:
         return const HomeScreen();
     }
