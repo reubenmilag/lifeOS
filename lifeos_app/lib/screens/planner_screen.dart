@@ -18,13 +18,43 @@ class _PlannerScreenState extends State<PlannerScreen> {
   bool _isMonthView = false;
   List<PlannerEvent> _events = [];
   bool _isLoading = true;
+  bool _initialScrollDone = false;
   late final PageController _weekPageController;
+  late final ScrollController _scrollController;
 
   @override
   void initState() {
     super.initState();
     _weekPageController = PageController(initialPage: 1000); // Start far out to allow back swiping
+    _scrollController = ScrollController();
     _fetchEvents();
+  }
+
+  @override
+  void dispose() {
+    _weekPageController.dispose();
+    _scrollController.dispose();
+    super.dispose();
+  }
+
+  void _scrollToCurrentTime() {
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (_scrollController.hasClients) {
+        final now = DateTime.now();
+        const double hourHeight = 60.0;
+        final double currentOffset = (now.hour * hourHeight) + (now.minute / 60.0 * hourHeight);
+        
+        final double viewportHeight = _scrollController.position.viewportDimension;
+        double targetOffset = currentOffset - (viewportHeight / 2);
+        
+        if (targetOffset < 0) targetOffset = 0;
+        if (targetOffset > _scrollController.position.maxScrollExtent) {
+          targetOffset = _scrollController.position.maxScrollExtent;
+        }
+        
+        _scrollController.jumpTo(targetOffset);
+      }
+    });
   }
 
   Future<void> _fetchEvents() async {
@@ -38,6 +68,10 @@ class _PlannerScreenState extends State<PlannerScreen> {
       setState(() {
         _events = events;
         _isLoading = false;
+        if (!_initialScrollDone) {
+          _initialScrollDone = true;
+          _scrollToCurrentTime();
+        }
       });
     } catch (e) {
       if (mounted) {
@@ -310,6 +344,7 @@ class _PlannerScreenState extends State<PlannerScreen> {
     final double hourHeight = 60.0;
 
     return SingleChildScrollView(
+      controller: _scrollController,
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -437,6 +472,40 @@ class _PlannerScreenState extends State<PlannerScreen> {
                     }
                  }
                  
+                 // Current Time Indicator
+                 final now = DateTime.now();
+                 if (_selectedDate.year == now.year &&
+                     _selectedDate.month == now.month &&
+                     _selectedDate.day == now.day) {
+                   
+                   final double currentMinutes = now.hour * 60 + now.minute.toDouble();
+                   final double top = (currentMinutes / 60) * hourHeight;
+                   
+                   children.add(Positioned(
+                     top: top,
+                     left: 0,
+                     right: 0,
+                     child: Row(
+                       children: [
+                         Container(
+                           width: 8,
+                           height: 8,
+                           decoration: const BoxDecoration(
+                             color: Colors.red,
+                             shape: BoxShape.circle,
+                           ),
+                         ),
+                         Expanded(
+                           child: Container(
+                             height: 2,
+                             color: Colors.red,
+                           ),
+                         ),
+                       ],
+                     ),
+                   ));
+                 }
+
                  return SizedBox(
                      height: 24 * hourHeight,
                      child: Stack(children: children),
