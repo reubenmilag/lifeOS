@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:forui/forui.dart';
+import 'sip_calculator_screen.dart';
 
 class MoreScreen extends StatelessWidget {
   const MoreScreen({super.key});
@@ -174,6 +175,12 @@ class _CardWidget extends StatelessWidget {
           ),
           child: InkWell(
             onTap: () {
+              if (item.route == '/sip-calc') {
+                Navigator.of(context).push(
+                    MaterialPageRoute(builder: (context) => const SipCalculatorScreen()),
+                );
+                return;
+              }
               // Navigation stub
               Navigator.of(context).push(
                 MaterialPageRoute(builder: (context) => _PlaceholderScreen(title: item.title)),
