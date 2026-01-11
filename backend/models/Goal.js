@@ -1,6 +1,12 @@
 import mongoose from 'mongoose';
 
 const goalSchema = new mongoose.Schema({
+  // Client-generated UUID for offline-first sync
+  clientId: {
+    type: String,
+    index: true,
+    sparse: true
+  },
   name: {
     type: String,
     required: true
@@ -28,6 +34,21 @@ const goalSchema = new mongoose.Schema({
   },
   note: {
     type: String
+  },
+  // Version for optimistic concurrency control
+  version: {
+    type: Number,
+    default: 1
+  },
+  // Soft delete flag for sync
+  isDeleted: {
+    type: Boolean,
+    default: false
+  },
+  // Timestamp of last modification (for sync)
+  updatedAt: {
+    type: Date,
+    default: Date.now
   }
 }, {
   timestamps: true,
@@ -40,6 +61,19 @@ const goalSchema = new mongoose.Schema({
     }
   }
 });
+
+// Pre-save middleware to increment version
+goalSchema.pre('save', function(next) {
+  if (this.isModified() && !this.isNew) {
+    this.version += 1;
+  }
+  this.updatedAt = new Date();
+  next();
+});
+
+// Indexes for sync queries
+goalSchema.index({ updatedAt: 1 });
+goalSchema.index({ clientId: 1 }, { sparse: true });
 
 const Goal = mongoose.model('Goal', goalSchema);
 

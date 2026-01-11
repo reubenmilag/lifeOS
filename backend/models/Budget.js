@@ -1,6 +1,12 @@
 import mongoose from 'mongoose';
 
 const budgetSchema = new mongoose.Schema({
+  // Client-generated UUID for offline-first sync
+  clientId: {
+    type: String,
+    index: true,
+    sparse: true
+  },
   name: {
     type: String,
     required: true
@@ -41,6 +47,21 @@ const budgetSchema = new mongoose.Schema({
   account: {
     type: mongoose.Schema.Types.ObjectId,
     ref: 'Account'
+  },
+  // Version for optimistic concurrency control
+  version: {
+    type: Number,
+    default: 1
+  },
+  // Soft delete flag for sync
+  isDeleted: {
+    type: Boolean,
+    default: false
+  },
+  // Timestamp of last modification (for sync)
+  updatedAt: {
+    type: Date,
+    default: Date.now
   }
 }, {
   timestamps: true,
@@ -53,6 +74,19 @@ const budgetSchema = new mongoose.Schema({
     }
   }
 });
+
+// Pre-save middleware to increment version
+budgetSchema.pre('save', function(next) {
+  if (this.isModified() && !this.isNew) {
+    this.version += 1;
+  }
+  this.updatedAt = new Date();
+  next();
+});
+
+// Indexes for sync queries
+budgetSchema.index({ updatedAt: 1 });
+budgetSchema.index({ clientId: 1 }, { sparse: true });
 
 const Budget = mongoose.model('Budget', budgetSchema);
 

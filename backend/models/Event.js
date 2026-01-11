@@ -1,6 +1,12 @@
 import mongoose from 'mongoose';
 
 const eventSchema = new mongoose.Schema({
+  // Client-generated UUID for offline-first sync
+  clientId: {
+    type: String,
+    index: true,
+    sparse: true
+  },
   title: {
     type: String,
     required: true
@@ -23,6 +29,21 @@ const eventSchema = new mongoose.Schema({
   isAllDay: {
     type: Boolean,
     default: false
+  },
+  // Version for optimistic concurrency control
+  version: {
+    type: Number,
+    default: 1
+  },
+  // Soft delete flag for sync
+  isDeleted: {
+    type: Boolean,
+    default: false
+  },
+  // Timestamp of last modification (for sync)
+  updatedAt: {
+    type: Date,
+    default: Date.now
   }
 }, {
   timestamps: true,
@@ -35,6 +56,20 @@ const eventSchema = new mongoose.Schema({
     }
   }
 });
+
+// Pre-save middleware to increment version
+eventSchema.pre('save', function(next) {
+  if (this.isModified() && !this.isNew) {
+    this.version += 1;
+  }
+  this.updatedAt = new Date();
+  next();
+});
+
+// Indexes for sync queries
+eventSchema.index({ updatedAt: 1 });
+eventSchema.index({ clientId: 1 }, { sparse: true });
+eventSchema.index({ startTime: 1, endTime: 1 });
 
 const Event = mongoose.model('Event', eventSchema);
 

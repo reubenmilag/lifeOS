@@ -15,6 +15,7 @@ import categoryRoutes from './routes/categories.js';
 import transactionRoutes from './routes/transactions.js';
 import accountTypeRoutes from './routes/accountTypes.js';
 import eventRoutes from './routes/events.js';
+import syncRoutes from './routes/sync.js';
 
 dotenv.config();
 
@@ -46,6 +47,7 @@ await fastify.register(categoryRoutes);
 await fastify.register(transactionRoutes);
 await fastify.register(accountTypeRoutes);
 await fastify.register(eventRoutes);
+await fastify.register(syncRoutes, { prefix: '/sync' });
 
 // Root route
 fastify.get('/', async (request, reply) => {
