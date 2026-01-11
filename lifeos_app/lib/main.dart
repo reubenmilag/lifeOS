@@ -5,8 +5,14 @@ import 'screens/finances_screen.dart';
 import 'screens/health_screen.dart';
 import 'screens/planner_screen.dart';
 import 'screens/more_screen.dart';
+import 'service_locator.dart';
 
-void main() {
+void main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+  
+  // Initialize offline-first services
+  await ServiceLocator.instance.initialize();
+  
   runApp(const LifeOSApp());
 }
 

@@ -4,7 +4,7 @@ import 'package:intl/intl.dart';
 import 'package:lifeos_app/models/budget_model.dart';
 import 'package:lifeos_app/models/transaction_model.dart';
 import 'package:lifeos_app/screens/add_budget_screen.dart';
-import 'package:lifeos_app/services/api_service.dart';
+import 'package:lifeos_app/service_locator.dart';
 import 'package:lifeos_app/utils/formatters.dart';
 import 'package:lifeos_app/widgets/transaction_list.dart';
 
@@ -20,7 +20,6 @@ class BudgetDetailScreen extends StatefulWidget {
 class _BudgetDetailScreenState extends State<BudgetDetailScreen>
     with SingleTickerProviderStateMixin {
   late TabController _tabController;
-  final ApiService _apiService = ApiService();
   List<TransactionModel> _transactions = [];
   bool _isLoading = true;
 
@@ -58,21 +57,18 @@ class _BudgetDetailScreenState extends State<BudgetDetailScreen>
     }
 
     try {
-      // Fetch transactions for the first category (or all if none specified)
-      // We'll filter client-side for multiple categories
-      final result = await _apiService.getTransactionsPaginated(
-        limit: 100, // Fetch enough for the detail view
-        accountId: widget.budget.accountId,
-        startDate: startDate,
-        endDate: endDate,
-        type: 'expense',
+      // Fetch transactions from local repository for the date range
+      final allTransactions = await locator.transactions.getByDateRange(
+        startDate,
+        endDate,
       );
-
-      final allTransactions = result['data'] as List<TransactionModel>;
+      
+      // Filter for expenses only
+      final expenseTransactions = allTransactions.where((t) => t.type == 'expense').toList();
 
       // Client-side filtering to ensure strict adherence to budget constraints
       // This handles multiple category filtering
-      final filteredTransactions = allTransactions.where((t) {
+      final filteredTransactions = expenseTransactions.where((t) {
         // Filter by categories if any are specified
         if (widget.budget.categoryIds.isNotEmpty) {
           if (t.categoryId == null || !widget.budget.categoryIds.contains(t.categoryId)) {
@@ -114,7 +110,7 @@ class _BudgetDetailScreenState extends State<BudgetDetailScreen>
             onPressed: () async {
               Navigator.pop(ctx); // Close dialog
               try {
-                await _apiService.deleteBudget(widget.budget.id!);
+                await locator.budgets.delete(widget.budget.id!);
                 if (mounted) {
                   Navigator.pop(context, true); // Return to previous screen with refresh signal
                 }

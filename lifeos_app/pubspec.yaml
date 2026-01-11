@@ -43,6 +43,13 @@ dependencies:
   intl: ^0.20.2
   flutter_speed_dial: ^7.0.0
   fl_chart: ^1.1.1
+  
+  # Offline-first architecture dependencies
+  sqflite: ^2.4.2                    # Local SQLite database
+  path: ^1.9.0                        # Path utilities for database
+  uuid: ^4.5.1                        # Generate unique IDs
+  connectivity_plus: ^6.1.4           # Network connectivity monitoring
+  synchronized: ^3.3.0+3              # Sync primitives for thread safety
 
 dev_dependencies:
   flutter_test:

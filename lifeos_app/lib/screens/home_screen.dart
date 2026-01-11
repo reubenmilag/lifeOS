@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:forui/forui.dart';
 import '../models/dashboard_model.dart';
 import '../services/api_service.dart';
+import '../service_locator.dart';
 import '../widgets/currency_converter_sheet.dart';
 import 'finances_screen.dart';
 import 'profile_settings_screen.dart';
@@ -15,14 +16,36 @@ class HomeScreen extends StatefulWidget {
 
 class _HomeScreenState extends State<HomeScreen> {
   final ApiService _apiService = ApiService();
-  late Future<DashboardData> _dashboardData;
+  Future<DashboardData>? _dashboardData;
   final ValueNotifier<Map<String, dynamic>?> _currencyRatesNotifier = ValueNotifier(null);
 
   @override
   void initState() {
     super.initState();
-    _dashboardData = _apiService.getDashboardData();
+    _loadDashboard();
     _initializeCurrencyRates();
+  }
+
+  Future<void> _loadDashboard() async {
+    // First, load from local data immediately
+    setState(() {
+      _dashboardData = locator.dashboard.getDashboardData();
+    });
+
+    // Then try to fetch from server if connected
+    if (locator.connectivity.isConnected) {
+      try {
+        final serverData = await _apiService.getDashboardData();
+        if (mounted) {
+          setState(() {
+            _dashboardData = Future.value(serverData);
+          });
+        }
+      } catch (e) {
+        // Keep local data on error
+        debugPrint('Error fetching dashboard from server: $e');
+      }
+    }
   }
 
   Future<void> _initializeCurrencyRates() async {

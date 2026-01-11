@@ -1,14 +1,13 @@
 import 'package:flutter/material.dart';
 import '../models/account_model.dart';
-import '../services/api_service.dart';
+import '../service_locator.dart';
 import 'account_edit_screen.dart';
 import '../utils/formatters.dart';
 
 class AccountDetailsScreen extends StatelessWidget {
   final Account account;
-  final ApiService _apiService = ApiService();
 
-  AccountDetailsScreen({super.key, required this.account});
+  const AccountDetailsScreen({super.key, required this.account});
 
   @override
   Widget build(BuildContext context) {
@@ -117,7 +116,7 @@ class AccountDetailsScreen extends StatelessWidget {
     if (confirmed == true && context.mounted) {
       try {
         if (account.id != null) {
-          await _apiService.deleteAccount(account.id!);
+          await locator.accounts.delete(account.id!);
           if (context.mounted) {
             Navigator.of(context).pop(true); // Return true to trigger refresh
           }

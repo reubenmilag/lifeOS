@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:forui/forui.dart';
 import 'package:intl/intl.dart';
-import '../services/api_service.dart';
+import '../service_locator.dart';
 import '../models/event_model.dart';
 
 class PlannerScreen extends StatefulWidget {
@@ -12,7 +12,6 @@ class PlannerScreen extends StatefulWidget {
 }
 
 class _PlannerScreenState extends State<PlannerScreen> {
-  final ApiService _apiService = ApiService();
   DateTime _selectedDate = DateTime.now();
   DateTime _focusedMonth = DateTime.now();
   bool _isMonthView = false;
@@ -64,7 +63,7 @@ class _PlannerScreenState extends State<PlannerScreen> {
       final start = DateTime(_selectedDate.year, _selectedDate.month, 1);
       final end = DateTime(_selectedDate.year, _selectedDate.month + 1, 0, 23, 59, 59);
       
-      final events = await _apiService.getEvents(startDate: start, endDate: end);
+      final events = await locator.events.getByDateRange(start, end);
       setState(() {
         _events = events;
         _isLoading = false;
@@ -553,7 +552,7 @@ class _PlannerScreenState extends State<PlannerScreen> {
         },
         onDelete: (id) async {
            // Delete logic here or passed through
-           await _apiService.deleteEvent(id);
+           await locator.events.delete(id);
            _fetchEvents();
         },
       ),
@@ -590,7 +589,6 @@ class _AddEventSheetState extends State<AddEventSheet> {
   late TimeOfDay _startTime;
   late TimeOfDay _endTime;
   late DateTime _selectedDate;
-  final ApiService _apiService = ApiService();
   late String _selectedColor;
 
   final List<String> _presetColors = [
@@ -1047,9 +1045,9 @@ class _AddEventSheetState extends State<AddEventSheet> {
     try {
       PlannerEvent savedEvent;
       if (widget.event != null) {
-        savedEvent = await _apiService.updateEvent(event);
+        savedEvent = await locator.events.update(event);
       } else {
-        savedEvent = await _apiService.createEvent(event);
+        savedEvent = await locator.events.create(event);
       }
       widget.onSave(savedEvent);
       if (mounted) Navigator.pop(context);

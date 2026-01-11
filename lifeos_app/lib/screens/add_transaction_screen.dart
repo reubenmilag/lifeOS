@@ -4,7 +4,7 @@ import 'package:intl/intl.dart';
 import '../models/account_model.dart';
 import '../models/category_model.dart';
 import '../models/transaction_model.dart';
-import '../services/api_service.dart';
+import '../service_locator.dart';
 import '../utils/currency_input_formatter.dart';
 import '../widgets/hierarchical_category_selector.dart';
 
@@ -22,7 +22,6 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> {
   final _amountController = TextEditingController();
   final _descriptionController = TextEditingController();
   final _tagsController = TextEditingController();
-  final ApiService _apiService = ApiService();
 
   String _selectedType = 'expense'; // expense, income, transfer
   Account? _selectedAccount;
@@ -67,8 +66,8 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> {
 
   Future<void> _loadData() async {
     try {
-      final accounts = await _apiService.getAccounts();
-      final categories = await _apiService.getCategories();
+      final accounts = await locator.accounts.getAll();
+      final categories = await locator.categories.getAll();
       
       if (mounted) {
         setState(() {
@@ -144,9 +143,9 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> {
       );
 
       if (widget.transaction != null) {
-        await _apiService.updateTransaction(transaction);
+        await locator.transactions.update(transaction);
       } else {
-        await _apiService.createTransaction(transaction);
+        await locator.transactions.create(transaction);
       }
 
       if (mounted) {

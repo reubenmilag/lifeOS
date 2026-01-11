@@ -5,7 +5,7 @@ import 'package:lifeos_app/models/account_model.dart';
 import 'package:lifeos_app/models/category_model.dart';
 import 'package:lifeos_app/models/transaction_model.dart';
 import 'package:lifeos_app/screens/add_transaction_screen.dart';
-import 'package:lifeos_app/services/api_service.dart';
+import 'package:lifeos_app/service_locator.dart';
 import 'package:lifeos_app/utils/formatters.dart';
 import 'package:lifeos_app/widgets/hierarchical_category_selector.dart';
 
@@ -17,7 +17,6 @@ class AllTransactionsScreen extends StatefulWidget {
 }
 
 class _AllTransactionsScreenState extends State<AllTransactionsScreen> {
-  final ApiService _apiService = ApiService();
   final ScrollController _scrollController = ScrollController();
   final TextEditingController _searchController = TextEditingController();
   Timer? _debounce;
@@ -74,8 +73,8 @@ class _AllTransactionsScreenState extends State<AllTransactionsScreen> {
   Future<void> _fetchInitialData() async {
     try {
       final results = await Future.wait([
-        _apiService.getCategories(),
-        _apiService.getAccounts(),
+        locator.categories.getAll(),
+        locator.accounts.getAll(),
         _fetchTransactions(page: 1),
       ]);
 
@@ -109,32 +108,69 @@ class _AllTransactionsScreenState extends State<AllTransactionsScreen> {
 
   Future<List<TransactionModel>> _fetchTransactions({required int page}) async {
     try {
-      final result = await _apiService.getTransactionsPaginated(
-        page: page,
-        limit: _limit,
-        search: _searchController.text,
-        type: _selectedType,
-        categoryId: _selectedCategoryId,
-        accountId: _selectedAccountId,
-        startDate: _startDate,
-        endDate: _endDate,
-      );
-
-      final newTransactions = result['data'] as List<TransactionModel>;
-      final meta = result['meta'];
+      // Fetch all transactions from local repository
+      List<TransactionModel> allTransactions;
+      
+      if (_startDate != null && _endDate != null) {
+        allTransactions = await locator.transactions.getByDateRange(_startDate!, _endDate!);
+      } else if (_startDate != null) {
+        allTransactions = await locator.transactions.getByDateRange(_startDate!, DateTime.now());
+      } else if (_endDate != null) {
+        allTransactions = await locator.transactions.getByDateRange(DateTime(2000), _endDate!);
+      } else {
+        allTransactions = await locator.transactions.getAll();
+      }
+      
+      // Client-side filtering
+      var filteredTransactions = allTransactions.where((t) {
+        // Type filter
+        if (_selectedType != null && _selectedType!.isNotEmpty && t.type != _selectedType) {
+          return false;
+        }
+        // Category filter
+        if (_selectedCategoryId != null && _selectedCategoryId!.isNotEmpty && t.categoryId != _selectedCategoryId) {
+          return false;
+        }
+        // Account filter
+        if (_selectedAccountId != null && _selectedAccountId!.isNotEmpty && t.accountId != _selectedAccountId) {
+          return false;
+        }
+        // Search filter
+        if (_searchController.text.isNotEmpty) {
+          final searchLower = _searchController.text.toLowerCase();
+          final descLower = (t.description ?? '').toLowerCase();
+          if (!descLower.contains(searchLower)) {
+            return false;
+          }
+        }
+        return true;
+      }).toList();
+      
+      // Sort by date descending
+      filteredTransactions.sort((a, b) => b.date.compareTo(a.date));
+      
+      // Client-side pagination
+      final totalItems = filteredTransactions.length;
+      final totalPages = (totalItems / _limit).ceil();
+      final startIndex = (page - 1) * _limit;
+      final endIndex = (startIndex + _limit).clamp(0, totalItems);
+      
+      final paginatedTransactions = startIndex < totalItems 
+          ? filteredTransactions.sublist(startIndex, endIndex)
+          : <TransactionModel>[];
 
       if (mounted) {
         setState(() {
           if (page == 1) {
-            _transactions = newTransactions;
+            _transactions = paginatedTransactions;
           } else {
-            _transactions.addAll(newTransactions);
+            _transactions.addAll(paginatedTransactions);
           }
-          _page = meta['page'];
-          _totalPages = meta['totalPages'];
+          _page = page;
+          _totalPages = totalPages > 0 ? totalPages : 1;
         });
       }
-      return newTransactions;
+      return paginatedTransactions;
     } catch (e) {
       debugPrint('Error fetching transactions: $e');
       return [];
@@ -150,7 +186,7 @@ class _AllTransactionsScreenState extends State<AllTransactionsScreen> {
 
   Future<void> _deleteTransaction(String id) async {
     try {
-      await _apiService.deleteTransaction(id);
+      await locator.transactions.delete(id);
       setState(() {
         _transactions.removeWhere((t) => t.id == id);
       });

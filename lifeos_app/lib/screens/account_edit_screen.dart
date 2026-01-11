@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:forui/forui.dart';
 import 'package:flutter_colorpicker/flutter_colorpicker.dart';
 import '../models/account_model.dart';
-import '../services/api_service.dart';
+import '../service_locator.dart';
 import '../utils/currency_input_formatter.dart';
 
 class AccountEditScreen extends StatefulWidget {
@@ -18,7 +18,6 @@ class _AccountEditScreenState extends State<AccountEditScreen> {
   final _formKey = GlobalKey<FormState>();
   final _nameController = TextEditingController();
   final _balanceController = TextEditingController();
-  final ApiService _apiService = ApiService();
   
   String _selectedColor = '#0099EE';
   bool _isLoading = false;
@@ -58,26 +57,14 @@ class _AccountEditScreenState extends State<AccountEditScreen> {
   }
 
   Future<void> _loadAccountTypes() async {
-    try {
-      final types = await _apiService.getAccountTypes();
-      setState(() {
-        _accountTypes = types;
-        if (_selectedAccountType == null && types.isNotEmpty) {
-          _selectedAccountType = types.first;
-        }
-      });
-    } catch (e) {
-      print('Error loading account types: $e');
-      // Fallback if API fails
-      if (mounted) {
-        setState(() {
-          _accountTypes = ['General', 'Cash', 'Wallets', 'Current Account', 'Credit Card', 'Saving Account', 'Bonus', 'Insurance', 'Investment', 'Loan', 'Mortgage', 'Account with overdraft'];
-          if (_selectedAccountType == null) {
-            _selectedAccountType = _accountTypes.first;
-          }
-        });
+    // Account types are static, so we use a predefined list
+    // This ensures offline functionality
+    setState(() {
+      _accountTypes = ['General', 'Cash', 'Wallets', 'Current Account', 'Credit Card', 'Saving Account', 'Bonus', 'Insurance', 'Investment', 'Loan', 'Mortgage', 'Account with overdraft'];
+      if (_selectedAccountType == null && _accountTypes.isNotEmpty) {
+        _selectedAccountType = _accountTypes.first;
       }
-    }
+    });
   }
 
   @override
@@ -107,9 +94,9 @@ class _AccountEditScreenState extends State<AccountEditScreen> {
       );
 
       if (widget.account == null) {
-        await _apiService.createAccount(account);
+        await locator.accounts.create(account);
       } else {
-        await _apiService.updateAccount(account);
+        await locator.accounts.update(account);
       }
 
       if (mounted) {

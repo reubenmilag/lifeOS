@@ -3,7 +3,7 @@ import 'package:forui/forui.dart';
 import 'package:intl/intl.dart';
 import 'package:flutter_colorpicker/flutter_colorpicker.dart';
 import '../models/goal_model.dart';
-import '../services/api_service.dart';
+import '../service_locator.dart';
 import '../utils/icon_utils.dart';
 import '../utils/currency_input_formatter.dart';
 import 'icon_selection_screen.dart';
@@ -19,7 +19,6 @@ class AddGoalScreen extends StatefulWidget {
 
 class _AddGoalScreenState extends State<AddGoalScreen> {
   final _formKey = GlobalKey<FormState>();
-  final _apiService = ApiService();
   
   late TextEditingController _nameController;
   late TextEditingController _targetController;
@@ -123,9 +122,9 @@ class _AddGoalScreenState extends State<AddGoalScreen> {
       );
 
       if (widget.goal == null) {
-        await _apiService.createGoal(goal);
+        await locator.goals.create(goal);
       } else {
-        await _apiService.updateGoal(goal);
+        await locator.goals.update(goal);
       }
 
       if (mounted) {

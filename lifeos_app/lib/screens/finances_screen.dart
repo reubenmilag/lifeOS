@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:forui/forui.dart';
 import 'package:lifeos_app/widgets/account_dashboard.dart';
-import 'package:lifeos_app/services/api_service.dart';
 import 'package:lifeos_app/models/account_model.dart';
 import 'package:lifeos_app/models/budget_model.dart';
 import 'package:lifeos_app/models/goal_model.dart';
@@ -19,6 +18,7 @@ import 'package:fl_chart/fl_chart.dart';
 import 'package:lifeos_app/screens/budget_detail_screen.dart';
 import 'package:lifeos_app/screens/goal_details_screen.dart';
 import 'package:lifeos_app/utils/icon_utils.dart';
+import 'package:lifeos_app/service_locator.dart';
 
 class FinancesScreen extends StatefulWidget {
   const FinancesScreen({super.key});
@@ -28,7 +28,6 @@ class FinancesScreen extends StatefulWidget {
 }
 
 class _FinancesScreenState extends State<FinancesScreen> with SingleTickerProviderStateMixin {
-  final ApiService _apiService = ApiService();
   late Future<List<Account>> _accountsFuture;
   late Future<List<Budget>> _budgetsFuture;
   late Future<List<Goal>> _goalsFuture;
@@ -54,11 +53,11 @@ class _FinancesScreenState extends State<FinancesScreen> with SingleTickerProvid
 
   void _refreshData() {
     setState(() {
-      _accountsFuture = _apiService.getAccounts();
-      _transactionsFuture = _apiService.getTransactions();
-      _budgetsFuture = _apiService.getBudgets();
-      _goalsFuture = _apiService.getGoals();
-      _categoriesFuture = _apiService.getCategories();
+      _accountsFuture = locator.accounts.getAll();
+      _transactionsFuture = locator.transactions.getAll();
+      _budgetsFuture = locator.budgets.getAll();
+      _goalsFuture = locator.goals.getAll();
+      _categoriesFuture = locator.categories.getAll();
     });
   }
 

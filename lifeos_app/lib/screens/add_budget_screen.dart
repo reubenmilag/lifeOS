@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:lifeos_app/models/account_model.dart';
 import 'package:lifeos_app/models/budget_model.dart';
 import 'package:lifeos_app/models/category_model.dart';
-import 'package:lifeos_app/services/api_service.dart';
+import 'package:lifeos_app/service_locator.dart';
 import 'package:lifeos_app/widgets/hierarchical_category_selector.dart';
 import 'package:intl/intl.dart';
 
@@ -17,7 +17,6 @@ class AddBudgetScreen extends StatefulWidget {
 
 class _AddBudgetScreenState extends State<AddBudgetScreen> {
   final _formKey = GlobalKey<FormState>();
-  final ApiService _apiService = ApiService();
 
   String _name = '';
   String _period = 'Month';
@@ -55,8 +54,8 @@ class _AddBudgetScreenState extends State<AddBudgetScreen> {
 
   Future<void> _loadData() async {
     try {
-      final categories = await _apiService.getCategories();
-      final accounts = await _apiService.getAccounts();
+      final categories = await locator.categories.getAll();
+      final accounts = await locator.accounts.getAll();
       setState(() {
         _categories = categories;
         _accounts = accounts;
@@ -147,9 +146,9 @@ class _AddBudgetScreenState extends State<AddBudgetScreen> {
 
       try {
         if (widget.budget != null) {
-          await _apiService.updateBudget(newBudget);
+          await locator.budgets.update(newBudget);
         } else {
-          await _apiService.createBudget(newBudget);
+          await locator.budgets.create(newBudget);
         }
         if (mounted) {
           Navigator.pop(context, true); // Return true to indicate success
